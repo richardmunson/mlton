@@ -961,6 +961,11 @@ signature AMD64 =
                                      src: Operand.t,
                                      dst: Operand.t,
                                      size: Size.t} -> t
+        val instruction_sse_trinas : {oper : Instruction.sse_trinas,
+                                      src1: Operand.t,
+                                      src2: Operand.t,
+                                      dst: Operand.t,
+                                      size: Size.t} -> t
         val instruction_sse_unas : {oper: Instruction.sse_unas,
                                     src: Operand.t,
                                     dst: Operand.t,
