@@ -7094,7 +7094,7 @@ struct
                                      size = size,
                                      move = true,
                                      supports = [],
-                                     saves = [dst, final_dst],
+                                     saves = [dst, final_src1_dst],
                                      force = [],
                                      registerAllocation
                                      = registerAllocation}
@@ -7267,7 +7267,7 @@ struct
                                      size = size,
                                      move = true,
                                      supports = [],
-                                     saves = [dst, final_dst],
+                                     saves = [dst, final_src2_dst],
                                      force = [],
                                      registerAllocation
                                      = registerAllocation}
@@ -7445,7 +7445,8 @@ struct
                                      registerAllocation
                                      = registerAllocation}
                               in
-                                {final_src1_src2 = final_src1_src2,
+                                {final_src1 = final_src1_src2,
+                                 final_src2 = final_src1_src2,
                                  final_dst = final_dst,
                                  assembly_src1_src2_dst 
                                  = AppendList.appends 
@@ -7481,7 +7482,7 @@ struct
                                      size = size,
                                      move = move_dst,
                                      supports = [],
-                                     saves = [src1,final_src1],
+                                     saves = [src1,final_src1_src2],
                                      force = [],
                                      registerAllocation 
                                      = registerAllocation}
@@ -7491,7 +7492,7 @@ struct
                                  final_dst = final_dst,
                                  assembly_src1_src2_dst 
                                  = AppendList.appends
-                                   [assembly_src1, 
+                                   [assembly_src1_src2, 
                                     assembly_dst],
                                  registerAllocation = registerAllocation}
                               end
@@ -7566,7 +7567,7 @@ struct
                                else default ()
                        in
                          {final_src1 = final_src1_src2,
-                          final_src2 = final_src1_src2
+                          final_src2 = final_src1_src2,
                           final_dst = final_dst,
                           assembly_src1_src2_dst 
                           = AppendList.appends 
@@ -7577,228 +7578,236 @@ struct
                     | _ => Error.bug "amd64AllocateRegisters.Instruction.allocateXmmSrc1Src2DstAux"
             else  (* all operands are distinct *)
               case (src1, src2, dst)
-                   of (Operand.MemLoc _,
-                       Operand.MemLoc _,
-                       Operand.MemLoc memloc_dst)
-                    => if MemLocSet.contains(dead,
-                                             memloc_dst)
-                          orelse
-                          MemLocSet.contains(remove,
-                                             memloc_dst)
-                         then let
-                                val {operand = final_dst,
-                                     assembly = assembly_dst,
-                                     registerAllocation}
-                                  = RA.allocateXmmOperand 
-                                    {operand = dst,
-                                     options = {xmmregister = true,
-                                                address = false},
-                                     info = info,
-                                     size = size,
-                                     move = move_dst,
-                                     supports = [src1, src2],
-                                     saves = [],
-                                     force = [],
-                                     registerAllocation 
-                                     = registerAllocation}
-
-                                val {operand = final_src1, 
-                                     assembly = assembly_src1,
-                                     registerAllocation}
-                                  = RA.allocateXmmOperand 
-                                    {operand = src1,
-                                     options = {xmmregister = true,
-                                                address = address_src1},
-                                     info = info,
-                                     size = size,
-                                     move = true,
-                                     supports = [],
-                                     saves = [dst, final_dst],
-                                     force = [],
-                                     registerAllocation
-                                     = registerAllocation}
-
-                                val {operand = final_src2, 
-                                     assembly = assembly_src2,
-                                     registerAllocation}
-                                  = RA.allocateXmmOperand 
-                                    {operand = src2,
-                                     options = {xmmregister = true,
-                                                address = address_src2},
-                                     info = info,
-                                     size = size,
-                                     move = true,
-                                     supports = [],
-                                     saves = [dst, final_dst],
-                                     force = [],
-                                     registerAllocation
-                                     = registerAllocation}
-                              in
-                                {final_src1 = final_src1,
-                                 final_src2 = final_src2,
-                                 final_dst = final_dst,
-                                 assembly_src1_src2_dst 
-                                 = AppendList.appends 
-                                   [assembly_dst,
-                                    assembly_src1,
-                                    assembly_src2],
-                                 registerAllocation = registerAllocation}
-                              end
-                         else let
-                                val {operand = final_src1, 
-                                     assembly = assembly_src1,
-                                     registerAllocation}
-                                  = RA.allocateXmmOperand 
-                                    {operand = src1,
-                                     options = {xmmregister = true,
-                                                address = address_src1},
-                                     info = info,
-                                     size = size,
-                                     move = true,
-                                     supports = [dst],
-                                     saves = [],
-                                     force = [],
-                                     registerAllocation
-                                     = registerAllocation}
-
-                                val {operand = final_src2, 
-                                     assembly = assembly_src2,
-                                     registerAllocation}
-                                  = RA.allocateXmmOperand 
-                                    {operand = src2,
-                                     options = {xmmregister = true,
-                                                address = address_src2},
-                                     info = info,
-                                     size = size,
-                                     move = true,
-                                     supports = [dst],
-                                     saves = [],
-                                     force = [],
-                                     registerAllocation
-                                     = registerAllocation}
-
-                                val {operand = final_dst,
-                                     assembly = assembly_dst,
-                                     registerAllocation}
-                                  = RA.allocateXmmOperand 
-                                    {operand = dst,
-                                     options = {xmmregister = true,
-                                                address = false},
-                                     info = info,
-                                     size = size,
-                                     move = move_dst,
-                                     supports = [],
-                                     saves = [src1,final_src1,src2,final_src2],
-                                     force = [],
-                                     registerAllocation 
-                                     = registerAllocation}
-                              in
-                                {final_src1 = final_src1,
-                                 final_src2 = final_src2,
-                                 final_dst = final_dst,
-                                 assembly_src1_src2_dst 
-                                 = AppendList.appends
-                                   [assembly_src1,
-                                    assembly_src2,
-                                    assembly_dst],
-                                 registerAllocation = registerAllocation}
-                              end
-                    | (_,
+                   of (_,  (* moved to conditional - check if at least one is a MemLoc *)
+                       _,
                        Operand.MemLoc memloc_dst)
                     => let
-                         val {operand = final_src1, 
-                              assembly = assembly_src1,
-                              registerAllocation}
-                           = RA.allocateXmmOperand 
-                             {operand = src1,
-                              options = {xmmregister = true,
-                                         address = false},
-                              info = info,
-                              size = size,
-                              move = true,
-                              supports = [dst],
-                              saves = [],
-                              force = [],
-                              registerAllocation 
-                              = registerAllocation}
+                          fun isMemLoc (Operand.Memloc _) = true
+                            | isMemLoc _                  = false
 
-                         val {operand = final_src2, 
-                              assembly = assembly_src2,
-                              registerAllocation}
-                           = RA.allocateXmmOperand 
-                             {operand = src2,
-                              options = {xmmregister = true,
-                                         address = false},
-                              info = info,
-                              size = size,
-                              move = true,
-                              supports = [dst],
-                              saves = [],
-                              force = [],
-                              registerAllocation 
-                              = registerAllocation}
+                        in
+                          if isMemLoc src1
+                             orelse
+                             isMemLoc src2 then
+                            if MemLocSet.contains(dead,
+                                                  memloc_dst)
+                               orelse
+                               MemLocSet.contains(remove,
+                                                  memloc_dst)
+                            then let
+                                  val {operand = final_dst,
+                                       assembly = assembly_dst,
+                                       registerAllocation}
+                                    = RA.allocateXmmOperand 
+                                      {operand = dst,
+                                       options = {xmmregister = true,
+                                                  address = false},
+                                       info = info,
+                                       size = size,
+                                       move = move_dst,
+                                       supports = [src1, src2],
+                                       saves = [],
+                                       force = [],
+                                       registerAllocation 
+                                       = registerAllocation}
 
-                         fun default ()
-                           = RA.allocateXmmOperand 
-                             {operand = dst,
-                              options = {xmmregister = true,
-                                         address = false},
-                              info = info,
-                              size = size,
-                              move = move_dst,
-                              supports = [],
-                              saves = [src1,final_src1,src2,final_src2],
-                              force = [],
-                              registerAllocation 
-                              = registerAllocation}
+                                  val {operand = final_src1, 
+                                       assembly = assembly_src1,
+                                       registerAllocation}
+                                    = RA.allocateXmmOperand 
+                                      {operand = src1,
+                                       options = {xmmregister = true,
+                                                  address = address_src1},
+                                       info = info,
+                                       size = size,
+                                       move = true,
+                                       supports = [],
+                                       saves = [dst, final_dst],
+                                       force = [],
+                                       registerAllocation
+                                       = registerAllocation}
 
-                         val {operand = final_dst,
-                              assembly = assembly_dst,
-                              registerAllocation}
-                           = if MemLocSet.contains(dead,
-                                                   memloc_dst)
-                                orelse
-                                MemLocSet.contains(remove,
-                                                   memloc_dst)
-                               then case RA.xmmallocated 
-                                         {memloc = memloc_dst,
-                                          registerAllocation = registerAllocation}
-                                      of SOME {register, sync, ...}
-                                       => if sync
-                                            then let
-                                                   val registerAllocation
-                                                     = RA.xmmdelete
-                                                       {register = register,
-                                                        registerAllocation 
-                                                        = registerAllocation}
-                                                 in
-                                                    RA.allocateXmmOperand 
-                                                    {operand = dst,
-                                                     options = {xmmregister = true,
-                                                                address = false},
-                                                     info = info,
-                                                     size = size,
-                                                     move = move_dst,
-                                                     supports = [],
-                                                     saves = [src1,final_src1,src2,final_src2],
-                                                     force = [],
-                                                     registerAllocation 
-                                                     = registerAllocation}
-                                                 end
-                                            else default ()
-                                       | NONE => default ()
-                               else default ()
-                       in
-                         {final_src1 = final_src1,
-                          final_src2 = final_src2,
-                          final_dst = final_dst,
-                          assembly_src1_src2_dst 
-                          = AppendList.appends 
-                            [assembly_src1,
-                             assembly_src2,
-                             assembly_dst],
-                          registerAllocation = registerAllocation}
-                       end
+                                  val {operand = final_src2, 
+                                       assembly = assembly_src2,
+                                       registerAllocation}
+                                    = RA.allocateXmmOperand 
+                                      {operand = src2,
+                                       options = {xmmregister = true,
+                                                  address = address_src2},
+                                       info = info,
+                                       size = size,
+                                       move = true,
+                                       supports = [],
+                                       saves = [dst, final_dst],
+                                       force = [],
+                                       registerAllocation
+                                       = registerAllocation}
+                                 in
+                                  {final_src1 = final_src1,
+                                   final_src2 = final_src2,
+                                   final_dst = final_dst,
+                                   assembly_src1_src2_dst 
+                                   = AppendList.appends 
+                                     [assembly_dst,
+                                      assembly_src1,
+                                      assembly_src2],
+                                   registerAllocation = registerAllocation}
+                                 end
+                            else let
+                                  val {operand = final_src1, 
+                                       assembly = assembly_src1,
+                                       registerAllocation}
+                                    = RA.allocateXmmOperand 
+                                      {operand = src1,
+                                       options = {xmmregister = true,
+                                                  address = address_src1},
+                                       info = info,
+                                       size = size,
+                                       move = true,
+                                       supports = [dst],
+                                       saves = [],
+                                       force = [],
+                                       registerAllocation
+                                       = registerAllocation}
+
+                                  val {operand = final_src2, 
+                                       assembly = assembly_src2,
+                                       registerAllocation}
+                                    = RA.allocateXmmOperand 
+                                      {operand = src2,
+                                       options = {xmmregister = true,
+                                                  address = address_src2},
+                                       info = info,
+                                       size = size,
+                                       move = true,
+                                       supports = [dst],
+                                       saves = [],
+                                       force = [],
+                                       registerAllocation
+                                       = registerAllocation}
+
+                                  val {operand = final_dst,
+                                       assembly = assembly_dst,
+                                       registerAllocation}
+                                    = RA.allocateXmmOperand 
+                                      {operand = dst,
+                                       options = {xmmregister = true,
+                                                  address = false},
+                                       info = info,
+                                       size = size,
+                                       move = move_dst,
+                                       supports = [],
+                                       saves = [src1,final_src1,src2,final_src2],
+                                       force = [],
+                                       registerAllocation 
+                                       = registerAllocation}
+                                in
+                                  {final_src1 = final_src1,
+                                   final_src2 = final_src2,
+                                   final_dst = final_dst,
+                                   assembly_src1_src2_dst 
+                                   = AppendList.appends
+                                     [assembly_src1,
+                                      assembly_src2,
+                                      assembly_dst],
+                                   registerAllocation = registerAllocation}
+                                end
+                          else
+                            let
+                               val {operand = final_src1, 
+                                    assembly = assembly_src1,
+                                    registerAllocation}
+                                 = RA.allocateXmmOperand 
+                                   {operand = src1,
+                                    options = {xmmregister = true,
+                                               address = false},
+                                    info = info,
+                                    size = size,
+                                    move = true,
+                                    supports = [dst],
+                                    saves = [],
+                                    force = [],
+                                    registerAllocation 
+                                    = registerAllocation}
+
+                               val {operand = final_src2, 
+                                    assembly = assembly_src2,
+                                    registerAllocation}
+                                 = RA.allocateXmmOperand 
+                                   {operand = src2,
+                                    options = {xmmregister = true,
+                                               address = false},
+                                    info = info,
+                                    size = size,
+                                    move = true,
+                                    supports = [dst],
+                                    saves = [],
+                                    force = [],
+                                    registerAllocation 
+                                    = registerAllocation}
+
+                               fun default ()
+                                 = RA.allocateXmmOperand 
+                                   {operand = dst,
+                                    options = {xmmregister = true,
+                                               address = false},
+                                    info = info,
+                                    size = size,
+                                    move = move_dst,
+                                    supports = [],
+                                    saves = [src1,final_src1,src2,final_src2],
+                                    force = [],
+                                    registerAllocation 
+                                    = registerAllocation}
+
+                               val {operand = final_dst,
+                                    assembly = assembly_dst,
+                                    registerAllocation}
+                                 = if MemLocSet.contains(dead,
+                                                         memloc_dst)
+                                      orelse
+                                      MemLocSet.contains(remove,
+                                                         memloc_dst)
+                                     then case RA.xmmallocated 
+                                               {memloc = memloc_dst,
+                                                registerAllocation = registerAllocation}
+                                            of SOME {register, sync, ...}
+                                             => if sync
+                                                  then let
+                                                         val registerAllocation
+                                                           = RA.xmmdelete
+                                                             {register = register,
+                                                              registerAllocation 
+                                                              = registerAllocation}
+                                                       in
+                                                          RA.allocateXmmOperand 
+                                                          {operand = dst,
+                                                           options = {xmmregister = true,
+                                                                      address = false},
+                                                           info = info,
+                                                           size = size,
+                                                           move = move_dst,
+                                                           supports = [],
+                                                           saves = [src1,final_src1,src2,final_src2],
+                                                           force = [],
+                                                           registerAllocation 
+                                                           = registerAllocation}
+                                                       end
+                                                  else default ()
+                                             | NONE => default ()
+                                     else default ()
+                             in
+                               {final_src1 = final_src1,
+                                final_src2 = final_src2,
+                                final_dst = final_dst,
+                                assembly_src1_src2_dst 
+                                = AppendList.appends 
+                                  [assembly_src1,
+                                   assembly_src2,
+                                   assembly_dst],
+                                registerAllocation = registerAllocation}
+                             end  
+                        end
                     | _ => Error.bug "amd64AllocateRegisters.Instruction.allocateXmmSrc1Src2DstAux"
 
       (*
