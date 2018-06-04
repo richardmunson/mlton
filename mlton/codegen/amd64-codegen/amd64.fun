@@ -2023,7 +2023,7 @@ struct
                       Size.layout size,
                       Operand.layout src1,
                       Operand.layout src2,
-                      Operand.layout dest)
+                      Operand.layout dst)
              | SSE_UnAS {oper, src, dst, size}
              => bin (sse_unas_layout oper,
                      Size.layout size,
