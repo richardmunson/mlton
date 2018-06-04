@@ -7273,7 +7273,7 @@ struct
                                      = registerAllocation}
                               in
                                 {final_src1 = final_src1,
-                                 final_src2_dst = final_src2_dst,
+                                 final_src2 = final_src2_dst,
                                  final_dst = final_src2_dst,
                                  assembly_src1_src2_dst 
                                  = AppendList.appends 
@@ -7315,8 +7315,8 @@ struct
                                      = registerAllocation}
                               in
                                 {final_src1 = final_src1,
+                                 final_src2 = final_src2_dst,
                                  final_dst = final_src2_dst,
-                                 final_src2_dst = final_src2_dst,
                                  assembly_src1_src2_dst 
                                  = AppendList.appends
                                    [assembly_src1, 
@@ -7499,8 +7499,8 @@ struct
                     | (_,
                        Operand.MemLoc memloc_dst)
                     => let
-                         val {operand = final_src1, 
-                              assembly = assembly_src1,
+                         val {operand = final_src1_src2, 
+                              assembly = assembly_src1_src2,
                               registerAllocation}
                            = RA.allocateXmmOperand 
                              {operand = src1,
@@ -7524,7 +7524,7 @@ struct
                               size = size,
                               move = move_dst,
                               supports = [],
-                              saves = [src1,final_src1],
+                              saves = [src1,final_src1_src2],
                               force = [],
                               registerAllocation 
                               = registerAllocation}
@@ -7557,7 +7557,7 @@ struct
                                                      size = size,
                                                      move = move_dst,
                                                      supports = [],
-                                                     saves = [src1,final_src1],
+                                                     saves = [src1,final_src1_src2],
                                                      force = [],
                                                      registerAllocation 
                                                      = registerAllocation}
@@ -10166,13 +10166,13 @@ struct
                              final_dst,
                              assembly_src_dst,
                              registerAllocation}
-                          = allocateXmmSrcDst {src1 = src1,
-                                               src2 = src2
-                                               dst = dst,
-                                               move_dst = true,
-                                               size = size,
-                                               info = info,
-                                               registerAllocation = registerAllocation}
+                          = allocateXmmSrc1Src2Dst {src1 = src1,
+                                                    src2 = src2,
+                                                    dst = dst,
+                                                    move_dst = true,
+                                                    size = size,
+                                                    info = info,
+                                                    registerAllocation = registerAllocation}
                         val instruction 
                           = Instruction.SSE_TrinAS
                             {oper = oper,
