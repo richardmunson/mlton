@@ -10164,7 +10164,7 @@ struct
                         val {final_src1,
                              final_src2,
                              final_dst,
-                             assembly_src_dst,
+                             assembly_src1_src2_dst,
                              registerAllocation}
                           = allocateXmmSrc1Src2Dst {src1 = src1,
                                                     src2 = src2,
