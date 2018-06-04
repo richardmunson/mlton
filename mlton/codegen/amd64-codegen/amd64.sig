@@ -577,6 +577,13 @@ signature AMD64 =
                           src: Operand.t,
                           dst: Operand.t,
                           size: Size.t}
+          (* Scalar SSE trinary arithmetic instructions.
+           *)
+          | SSE_TrinAS of {oper: sse_trinas,
+                           src1: Operand.t,
+                           src2: Operand.t,
+                           dst: Operand.t,
+                           size: Size.t}
           (* Scalar SSE unary arithmetic instructions.
            *)
           | SSE_UnAS of {oper: sse_unas,
