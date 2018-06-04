@@ -214,6 +214,12 @@ signature AMD64_PSEUDO =
           | SSE_DIVS (* division; p. 97,100 *)
           | SSE_MAXS (* maximum; p. 128, 130 *)
           | SSE_MINS (* minimum; p. 132, 134 *)
+
+        (* Scalar SSE trinary arithmetic instructions *)
+        datatype sse_trinas
+          = SSE_VFMADDS  (* fused multiply-add; amd3.22 p. 204, 208 *)
+          | SSE_VFMSUBS  (* fused multiply-subtract; amd3.22 p. 204, 210 *)
+
         (* Scalar SSE unary arithmetic instructions. *)
         datatype sse_unas
           = SSE_SQRTS (* square root; p. 360,362 *)
@@ -328,6 +334,11 @@ signature AMD64_PSEUDO =
                                      src: Operand.t,
                                      dst: Operand.t,
                                      size: Size.t} -> t
+        val instruction_sse_trinas : {oper : Instruction.sse_trinas,
+                                      src1: Operand.t,
+                                      src2: Operand.t,
+                                      dst: Operand.t,
+                                      size: Size.t} -> t
         val instruction_sse_unas : {oper: Instruction.sse_unas,
                                     src: Operand.t,
                                     dst: Operand.t,

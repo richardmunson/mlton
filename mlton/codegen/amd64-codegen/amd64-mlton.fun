@@ -607,6 +607,36 @@ struct
                 transfer = NONE}]
             end
 
+        fun sse_trinas oper
+          = let
+              val ((src1, src1size),
+                   (src2, src2size),
+                   (src3, src3size)) = getSrc3 ()
+              val (dst, dstsize) = getDst1 ()
+              val _
+                = Assert.assert
+                  ("amd64MLton.prim: trinal, dstsize/src1size/src2size/src3size",
+                   fn () => src1size = dstsize andalso
+                            src2size = dstsize andalso
+                            src3size = dstsize)
+            in
+              AppendList.fromList
+              [Block.mkBlock'
+               {entry = NONE,
+                statements
+                = [Assembly.instruction_sse_movs
+                   {dst = dst,
+                    src = src1,
+                    size = src1size},
+                   Assembly.instruction_sse_trinas
+                   {oper = oper,
+                    dst = dst,
+                    src1 = src2,
+                    src2 = src3,
+                    size = dstsize}],
+               transfer = NONE}]
+            end
+
         fun sse_unas oper
           = let
               val (src,srcsize) = getSrc1 ()
@@ -897,8 +927,8 @@ struct
                      transfer = NONE}]
                 end
              | Real_mul _ => sse_binas Instruction.SSE_MULS
-             | Real_muladd _ => sse_binas_mul Instruction.SSE_ADDS
-             | Real_mulsub _ => sse_binas_mul Instruction.SSE_SUBS
+             | Real_muladd _ => sse_trinas Instruction.SSE_VFMADDS
+             | Real_mulsub _ => sse_trinas Instruction.SSE_VFMSUBS
              | Real_neg s =>
                 let
                    val (dst,dstsize) = getDst1 ()

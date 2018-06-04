@@ -7,6 +7,13 @@
  * See the file MLton-LICENSE for details.
  *)
 
+(* NOTE: Some references to programming manuals are made within this
+ * code along with shorthand labels:
+ * 
+ * amd3.22 - AMD64 Architecture Programmer's Manual Volume 1:
+ *           Application Programming (Revision 3.22 - December 2017)
+ *)
+
 functor amd64 (S: AMD64_STRUCTS): AMD64 =
 struct
 
@@ -1599,6 +1606,18 @@ struct
              | SSE_MAXS => str "maxs"
              | SSE_MINS => str "mins"
           end
+      (* scalar SSE trinary arithmetic instructions *)
+      datatype sse_trinas
+        = SSE_VFMADDS  (* fused multiply-add; amd3.22 p. 204, 208 *)
+        | SSE_VFMSUBS  (* fused multiply-subtract; amd3.22 p. 204, 210 *)
+      val sse_trinas_layout
+        = let
+            open Layout
+          in
+            fn SSE_VFMADDS => str "vfmadds"
+             | SSE_VFMSUBS => str "vfmsubs"
+          end
+
       (* Scalar SSE unary arithmetic instructions. *)
       datatype sse_unas
         = SSE_SQRTS (* square root; p. 360,362 *)
@@ -1757,6 +1776,13 @@ struct
                         src: Operand.t,
                         dst: Operand.t,
                         size: Size.t}
+        (* Scalar SSE trinary arithmetic instructions.
+         *)
+        | SSE_TrinAS of {oper: sse_trinas,
+                         src1: Operand.t,
+                         src2: Operand.t,
+                         dst: Operand.t,
+                         size: Size.t}
         (* Scalar SSE unary arithmetic instructions.
          *)
         | SSE_UnAS of {oper: sse_unas,
@@ -1983,6 +2009,12 @@ struct
                      Size.layout size,
                      Operand.layout src,
                      Operand.layout dst)
+             | SSE_TrinAS {oper, src1, src2, dst, size}
+             => bin (sse_trinas_layout oper,
+                     Size.layout size,
+                     Operand.layout src1,
+                     Operand.layout src2,
+                     Operand.layout dest)
              | SSE_UnAS {oper, src, dst, size}
              => bin (sse_unas_layout oper,
                      Size.layout size,
@@ -2201,6 +2233,8 @@ struct
            => {uses = [src], defs = [dst], kills = []}
            | SSE_BinAS {src, dst, ...}
            => {uses = [src, dst], defs = [dst], kills = []}
+           | SSE_TrinAS {src1, src2, dst, ...}
+           => {uses = [src1, src2, dst], defs = [dst], kills = []}
            | SSE_UnAS {src, dst, ...}
            => {uses = [src], defs = [dst], kills = []}
            | SSE_BinLP {src, dst, ...}
@@ -2442,6 +2476,8 @@ struct
            => {srcs = SOME [src], dsts = SOME [dst]}
            | SSE_BinAS {src, dst, ...}
            => {srcs = SOME [src, dst], dsts = SOME [dst]}
+           | SSE_TrinAS {src1, src2, dst, ...}
+           => {srcs = SOME [src1, src2, dst], dsts = SOME [dst]}
            | SSE_UnAS {src, dst, ...}
            => {srcs = SOME [src], dsts = SOME [dst]}
            | SSE_BinLP {src, dst, ...}
@@ -2568,6 +2604,12 @@ struct
                          src = replacer {use = true, def = false} src,
                          dst = replacer {use = true, def = true} dst,
                          size = size}
+           | SSE_TrinAS {oper, src1, src2, dst, size}
+           => SSE_TrinAS {oper = oper,
+                          src1 = replacer {use = true, def = false} src1,
+                          src2 = replacer {use = true, def = false} src2,
+                          dst = replacer {use = true, def = true} dst,
+                          size = size}
            | SSE_UnAS {oper, src, dst, size}
            => SSE_UnAS {oper = oper,
                         src = replacer {use = true, def = false} src,
@@ -2638,6 +2680,7 @@ struct
       val xvom = XVOM
       val lea = LEA
       val sse_binas = SSE_BinAS
+      val sse_trinas = SSE_TrinAS
       val sse_unas = SSE_UnAS
       val sse_binlp = SSE_BinLP
       val sse_movs = SSE_MOVS
@@ -3357,6 +3400,7 @@ struct
       val instruction_xvom = Instruction o Instruction.xvom
       val instruction_lea = Instruction o Instruction.lea
       val instruction_sse_binas = Instruction o Instruction.sse_binas
+      val instruction_sse_trinas = Instruction o Instruction.sse_trinas
       val instruction_sse_unas = Instruction o Instruction.sse_unas
       val instruction_sse_binlp = Instruction o Instruction.sse_binlp
       val instruction_sse_movs = Instruction o Instruction.sse_movs
