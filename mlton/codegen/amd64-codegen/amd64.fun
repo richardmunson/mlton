@@ -1843,6 +1843,15 @@ struct
                      oper1,
                      str ",",
                      oper2]
+            fun trin (oper, size, oper1, oper2, oper3)
+              = seq [oper,
+                     size,
+                     str " ",
+                     oper1,
+                     str ",",
+                     oper2,
+                     str ",",
+                     oper3]
             fun un (oper, size, oper1)
               = seq [oper,
                      size,
@@ -2010,11 +2019,11 @@ struct
                      Operand.layout src,
                      Operand.layout dst)
              | SSE_TrinAS {oper, src1, src2, dst, size}
-             => bin (sse_trinas_layout oper,
-                     Size.layout size,
-                     Operand.layout src1,
-                     Operand.layout src2,
-                     Operand.layout dest)
+             => trin (sse_trinas_layout oper,
+                      Size.layout size,
+                      Operand.layout src1,
+                      Operand.layout src2,
+                      Operand.layout dest)
              | SSE_UnAS {oper, src, dst, size}
              => bin (sse_unas_layout oper,
                      Size.layout size,
