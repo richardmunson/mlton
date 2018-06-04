@@ -7394,7 +7394,7 @@ struct
                                else default ()
                        in
                          {final_src1 = final_src1,
-                          final_src2_dst = final_src2_dst,
+                          final_src2 = final_src2_dst,
                           final_dst = final_src2_dst,
                           assembly_src1_src2_dst 
                           = AppendList.appends 
@@ -7582,7 +7582,7 @@ struct
                        _,
                        Operand.MemLoc memloc_dst)
                     => let
-                          fun isMemLoc (Operand.Memloc _) = true
+                          fun isMemLoc (Operand.MemLoc _) = true
                             | isMemLoc _                  = false
 
                         in
@@ -10199,7 +10199,7 @@ struct
                         {assembly
                          = AppendList.appends 
                            [assembly_pre,
-                            assembly_src_dst,
+                            assembly_src1_src2_dst,
                             AppendList.single
                             (Assembly.instruction instruction),
                             assembly_post],
