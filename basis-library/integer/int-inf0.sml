@@ -960,9 +960,9 @@ structure IntInf =
             (* size (in bytes) of objptr times number of objptrs requested *)
             Sz.* (zextdFromInt32 (Int32.quot (ObjptrWord.sizeInBits, 8)), zextdFromSeqIndex n)
             + bytesPerSequenceMetaData (* Sequence MetaData *)
-            + case MLton.Align.align of
+            + (case MLton.Align.align of
                   MLton.Align.Align4 => 0w3
-                | MLton.Align.Align8 => 0w7
+                | MLton.Align.Align8 => 0w7)
 
          (*
           * Reserve heap space for a large IntInf.int with room for num + extra
@@ -984,9 +984,9 @@ structure IntInf =
           *)
          fun reserve (num: S.int, extra: S.int) =
             reserve_noAlign (num, extra)
-            + case MLton.Align.align of
-                 MLton.Align.Align4 => 0w3
-               | MLton.Align.Align8 => 0w7
+            + (case MLton.Align.align of
+                  MLton.Align.Align4 => 0w3
+                | MLton.Align.Align8 => 0w7)
       end
 
       (* badObjptr{Int,Word}{,Tagged} is the fixnum IntInf.int whose 
@@ -1157,9 +1157,9 @@ structure IntInf =
                                           * Add in an alignment for each result
                                           *)
                                          reserveIntinfVector 2 + q_reserve_nA + r_reserve_nA
-                                            + 0w2 * case MLton.Align.align of
-                                                      MLton.Align.Align4 => 0w3
-                                                    | MLton.Align.Align8 => 0w7,
+                                            + 0w2 * (case MLton.Align.align of
+                                                        MLton.Align.Align4 => 0w3
+                                                      | MLton.Align.Align8 => 0w7),
                                          (* Also store the individual reservation byte counts - will be
                                           * needed on the runtime side to determine how much space the
                                           * rem argument should be pushed forward.
