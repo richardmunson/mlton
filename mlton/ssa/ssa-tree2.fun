@@ -360,6 +360,7 @@ structure Type =
             val default = fn () =>
                (default ()) handle BadPrimApp => false
 
+            datatype z = datatype Prim.Name.t
             fun arg i = Vector.sub (args, i)
             fun oneArg f = 1 = Vector.length args andalso f (arg 0)
             fun twoArgs f = 2 = Vector.length args andalso f (arg 0, arg 1)
