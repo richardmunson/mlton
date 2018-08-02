@@ -46,7 +46,7 @@ static inline int intInf_limbsInternal (GC_state s, objptr arg) {
   if (isSmall(arg)) {
     return 1;  // is only one limb
   } else {
-    GC_intInf bp = toBignum (s, arg);
+    GC_intInf bp = toBignum(s, arg);
     return bp->length - 1;  // remove the isNeg field
   }
 }
@@ -64,9 +64,9 @@ static inline void quotRemLimbs_quotExtra(int n_limbs, int d_limbs, int extra,
 
 // make different versions of the above function by "currying" (not really) extra
 void nonCeilQuotLimbs (int n_limbs, int d_limbs, int *r1_limbs, int *r2_limbs)
-  { quotLimbsExtra (n_limbs, d_limbs, 1, r1_limbs, r2_limbs); }
+  { quotRemLimbs_quotExtra (n_limbs, d_limbs, 1, r1_limbs, r2_limbs); }
 void ceilQuotLimbs (int n_limbs, int d_limbs, int *r1_limbs, int *r2_limbs)
-  { quotLimbsExtra (n_limbs, d_limbs, 2, r1_limbs, r2_limbs); }
+  { quotRemLimbs_quotExtra (n_limbs, d_limbs, 2, r1_limbs, r2_limbs); }
 
 /*
  * An analog of the reserve method on the SML side (but probably with more
@@ -466,19 +466,23 @@ objptr IntInf_binop_2 (GC_state s,
   mp_limb_t lhsspace[LIMBS_PER_OBJPTR + 1], rhsspace[LIMBS_PER_OBJPTR + 1];
 
   if (DEBUG_INT_INF)
-    fprintf (stderr, "IntInf_binop_2 ("FMTOBJPTR", "FMTOBJPTR", %"PRIuMAX", %"PRIuMAX")\n",
-             lhs, rhs, (uintmax_t)l_bytes, (uintmax_t)r_bytes);
+    fprintf (stderr, "IntInf_binop_2 ("FMTOBJPTR", "FMTOBJPTR", %"PRIuMAX")\n",
+             lhs, rhs, (uintmax_t)tot_bytes);
 
   // get the sizes for the left argument here
-  int num_limbs = intInf_limbsInternal(lhs);
-  int denom_limbs = intInf_limbsInternal(rhs);
+  int num_limbs = intInf_limbsInternal(s, lhs);
+  int denom_limbs = intInf_limbsInternal(s, rhs);
   int l_limbs, r_limbs;
   result_limbs(num_limbs, denom_limbs, &l_limbs, &r_limbs);
-  size_t l_bytes = limbsToSize(l_limbs), r_bytes = limbsToSize(r_limbs);
+  size_t l_bytes = limbsToSize(s, l_limbs), r_bytes = limbsToSize(s, r_limbs);
+
+  if (DEBUG_INT_INF_DETAILED)
+    fprintf (stderr, "IntInf_binop_2 computed result sizes: %"PRIuMAX", %"PRIuMAX")\n",
+             lhs, rhs, (uintmax_t)l_bytes, r_bytes);
 
   // get the sequence for storing the final results (will be allocated on the stack here)
   GC_objptr_sequence finals =
-    initIntInfRes_2(s, &l_res_mpz, &r_res_mpz, tot_bytes, l_bytes);
+    initIntInfRes_2 (s, &l_res_mpz, &r_res_mpz, tot_bytes, l_bytes);
   fillIntInfArg (s, lhs, &lhsmpz, lhsspace);
   fillIntInfArg (s, rhs, &rhsmpz, rhsspace);
   binop (&l_res_mpz, &r_res_mpz, &lhsmpz, &rhsmpz);

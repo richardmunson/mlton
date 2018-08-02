@@ -59,7 +59,7 @@ COMPILE_TIME_ASSERT(sizeof_mp_limb_t__compat__sizeof_objptr,
 
 PRIVATE void initIntInf (GC_state s);
 
-static inline int intInf_lengthInternal (GC_state s, objptr arg);
+static inline int intInf_limbsInternal (GC_state s, objptr arg);
 static inline void fillIntInfArg (GC_state s, objptr arg, __mpz_struct *res, 
                                   mp_limb_t space[LIMBS_PER_OBJPTR + 1]);
 static inline void initIntInfRes (GC_state s, __mpz_struct *res, size_t bytes);
@@ -72,7 +72,7 @@ static inline GC_objptr_sequence initIntInfRes_2 (GC_state s,
 static inline objptr finiIntInfRes (GC_state s, __mpz_struct *res, size_t bytes);
 static inline objptr finiIntInfRes_2 (GC_state s,
                                       __mpz_struct *l_res, __mpz_struct *r_res,
-                                      size_t tot_bytes,
+                                      size_t l_bytes, size_t r_bytes,
                                       GC_objptr_sequence finals);
 
 /*
