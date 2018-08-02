@@ -63,9 +63,9 @@ static inline void quotRemLimbs_quotExtra(int n_limbs, int d_limbs, int extra,
 }
 
 // make different versions of the above function by "currying" (not really) extra
-void nonCeilQuotLimbs (int n_limbs, int d_limbs, int *r1_limbs, int *r2_limbs)
+inline void nonCeilQuotLimbs (int n_limbs, int d_limbs, int *r1_limbs, int *r2_limbs)
   { quotRemLimbs_quotExtra (n_limbs, d_limbs, 1, r1_limbs, r2_limbs); }
-void ceilQuotLimbs (int n_limbs, int d_limbs, int *r1_limbs, int *r2_limbs)
+inline void ceilQuotLimbs (int n_limbs, int d_limbs, int *r1_limbs, int *r2_limbs)
   { quotRemLimbs_quotExtra (n_limbs, d_limbs, 2, r1_limbs, r2_limbs); }
 
 /*
