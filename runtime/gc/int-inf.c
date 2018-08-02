@@ -385,8 +385,8 @@ objptr finiIntInfRes_2 (GC_state s, __mpz_struct *l_res, __mpz_struct *r_res,
   __mpz_is_correct_fmt (r_res);
 
   if (DEBUG_INT_INF)
-    fprintf (stderr, "finiIntInfRes_2 ("FMTPTR", "FMTPTR", %"PRIuMAX", %"FMTPTR")\n",
-             (uintptr_t)l_res, (uintptr_t)r_res, (uintmax_t)tot_bytes, (uintptr_t)finals);
+    fprintf (stderr, "finiIntInfRes_2 ("FMTPTR", "FMTPTR", %"PRIuMAX", %"PRIuMAX", %"FMTPTR")\n",
+             (uintptr_t)l_res, (uintptr_t)r_res, (uintmax_t)l_bytes, (uintmax_t)r_bytes, (uintptr_t)finals);
   if (DEBUG_INT_INF_DETAILED)
     fprintf (stderr, "l_res --> %s\nr_res --> %s\n",
              mpz_get_str (NULL, 10, l_res), mpz_get_str (NULL, 10, r_res));
@@ -478,7 +478,7 @@ objptr IntInf_binop_2 (GC_state s,
 
   if (DEBUG_INT_INF_DETAILED)
     fprintf (stderr, "IntInf_binop_2 computed result sizes: %"PRIuMAX", %"PRIuMAX")\n",
-             lhs, rhs, (uintmax_t)l_bytes, r_bytes);
+             (uintmax_t)l_bytes, (uintmax_t)r_bytes);
 
   // get the sequence for storing the final results (will be allocated on the stack here)
   GC_objptr_sequence finals =
