@@ -964,27 +964,21 @@ structure IntInf =
                   MLton.Align.Align4 => 0w3
                 | MLton.Align.Align8 => 0w7)
 
-         (*
+         (* 
           * Reserve heap space for a large IntInf.int with room for num + extra
           * `limbs'.  The reason for splitting this up is that extra is intended
           * to be a constant, and so can be combined at compile time.
+          * 
+          * The alignment is probably overkill, but is necessary to ensure that
+          * the heap limit check actually checks for enough bytes in every case.
           *)
-         fun reserve_noAlign (num: S.int, extra: S.int) =
+         fun reserve (num: S.int, extra: S.int) =
             bytesPerMPLimb *
                (zextdFromSeqIndex num (* primary limbs required *)
                 + zextdFromSeqIndex extra (* extra limbs required *)
                 + 0w1) (* isNeg field *)
             + bytesPerSequenceMetaData (* Sequence MetaData *)
-
-         (* 
-          * Reserve an intInf argument with the given number of limbs, but add
-          * in an alignment. The alignment is probably overkill, but is necessary
-          * to ensure that the heap limit check actually checks for enough bytes
-          * in every case.
-          *)
-         fun reserve (num: S.int, extra: S.int) =
-            reserve_noAlign (num, extra)
-            + (case MLton.Align.align of
+            + (case MLton.Align.align of (* alignment *)
                   MLton.Align.Align4 => 0w3
                 | MLton.Align.Align8 => 0w7)
       end
@@ -1053,12 +1047,21 @@ structure IntInf =
             end
 
          (*
-          * quotient and remainder for small values (fitting in objptr)
+          * NOTE that in the following section, "division" and "remainder" are
+          * terms used to refer to the general operations independently from
+          * their rounding methods, NOT div and rem specifically.
+          *)
+         (*
+          * Divisions and remainders for small values (fitting in objptr)
           * 
           * Pull these functions out because each will be used twice,
           * and we want to avoid redundant size checks if at all possible.
           *)
-         fun smallQuot (num: bigInt, den: bigInt): bigInt =
+
+         (* Takes in a function for division on small integers and makes
+          * a small division handler *)
+         fun smallDivision (f: ObjptrInt.int * ObjptrInt.int -> ObjptrInt.int)
+                           (num: bigInt, den: bigInt): bigInt =
             let
                val (numw, numi) = word_objptr_arg num
                val (_, deni) = word_objptr_arg den
@@ -1068,113 +1071,175 @@ structure IntInf =
                then negBadIntInf
                else
                   let
-                     val (_, ans) = word_tag_ans (I.quot (numi, deni))
+                     val (_, ans) = word_tag_ans (f (numi, deni))
                   in 
                      Prim.fromWord ans
                   end
             end
 
-         fun smallRem (num, den) =
+         val smallCeilDiv = smallDivision (fn (n, d) => (I.~ o I.div) (n, I.~ d))
+         val smallDiv = smallDivision I.div
+         val smallQuot = smallDivision I.quot
+
+         (* small remainder factory similar to the small quot factory above *)
+         fun smallRemainder (f: ObjptrInt.int * ObjptrInt.int -> ObjptrInt.int)
+                            (num: bigInt, den: bigInt): bigInt =
             let 
                val (_, numi) = word_objptr_arg num
                val (_, deni) = word_objptr_arg den
-               val (_, ans) = word_tag_ans (I.rem (numi, deni))
+               val (_, ans) = word_tag_ans (f (numi, deni))
             in 
                Prim.fromWord ans
             end
 
-         fun quotReserve_noAlign (nlimbs, dlimbs) = reserve_noAlign (S.- (nlimbs, dlimbs), 1)
-         fun remReserve_noAlign (nlimbs, dlimbs) = reserve_noAlign (dlimbs, 0)
-      in
-         val bigAdd = make (I.+!, Prim.+, S.max, 1)
-         val bigSub = make (I.-!, Prim.-, S.max, 1)
-         val bigMul = make (I.*!, Prim.*, S.+, 0)
+         val smallCeilMod = smallRemainder (fn (n, d) => I.mod (n, I.~ d))
+         val smallMod = smallRemainder I.mod
+         val smallRem = smallRemainder I.rem
 
-         fun bigQuot (num: bigInt, den: bigInt): bigInt =
-            if areSmall (num, den) then smallQuot (num, den)
+         (* big division/remainder curried factories *)
+         fun bigDivision (small: bigInt * bigInt -> bigInt,
+                          big: bigInt * bigInt * Sz.int -> bigInt,
+                          extra: S.int)
+                         (num: bigInt, den: bigInt): bigInt =
+            if areSmall (num, den) then
+               small (num, den)
+            else
+               let
+                  val nlimbs = numLimbs num
+                  val dlimbs = numLimbs den
+               in
+                  if S.< (nlimbs, dlimbs) then
+                     zero
+                  else if den = zero then
+                     raise Div
+                  else
+                     big (num, den, reserve (S.- (nlimbs, dlimbs), extra))
+               end
+
+         (*
+          * Adjust the sign of the remainder if that is necessary for the
+          * particular rounding method used in the trivial case where
+          * limbs(num) < limbs(denom)
+          * 
+          * These will be passed to the remainder factories
+          *)
+         (* ceilMod adjuster - result should have opposite sign of den.
+          * If signs are the same, subtract the denominator from
+          * the numerator, yielding a result that has the opposite
+          * sign of the denominator *)
+         fun trivial_adj_ceilMod (num, den) =
+            if den < 0 then
+               if num >= 0 then
+                  num
                else
-                  let
-                     val nlimbs = numLimbs num
-                     val dlimbs = numLimbs den
-                  in
-                     if S.< (nlimbs, dlimbs) then
-                        zero
-                     else if den = zero then
-                        raise Div
-                     else
-                        Prim.quot (num, den,
-                                   (* add in the alignment after base quot size computation *)
-                                   Sz.+ (quotReserve_noAlign (nlimbs, dlimbs),
-                                         case MLton.Align.align of
-                                            MLton.Align.Align4 => 0w3
-                                          | MLton.Align.Align8 => 0w7))
-                  end
-
-         fun bigRem (num: bigInt, den: bigInt): bigInt =
-            if areSmall (num, den)
-               then smallRem (num, den)
+                  Prim.- (num, den)
+            else
+               if num <= 0 then
+                  num
                else
-                  let 
-                     val nlimbs = numLimbs num
-                     val dlimbs = numLimbs den
-                  in 
-                     if S.< (nlimbs, dlimbs) then
-                        num
-                     else if den = zero then
-                        raise Div
-                     else
-                        Prim.rem (num, den,
-                                  (* add in the alignment after base rem size computation *)
-                                  Sz.+ (remReserve_noAlign (nlimbs, dlimbs),
-                                        case MLton.Align.align of
-                                           MLton.Align.Align4 => 0w3
-                                         | MLton.Align.Align8 => 0w7))
-                  end
+                  Prim.- (num, den)
 
-         fun bigQuotRem (num, den) =
+         (* mod adjuster - Result should have same sign as den.
+          * If signs are not the same, add the denominator to the
+          * numerator, yielding a result that has the same sign
+          * as the denominator *)
+         fun trivial_adj_mod (num, den) =
+            if den < 0 then
+               if num <= 0 then
+                  num
+               else
+                  Prim.+ (num, den)
+            else
+               if num >= 0 then
+                  num
+               else
+                  Prim.+ (num, den)
+
+         (* rem adjuster - nothing to do, just return num with no processing. *)
+         fun trivial_adj_rem (num, den) = num
+
+         fun bigRemainder (small: bigInt * bigInt -> bigInt,
+                           big: bigInt * bigInt * Sz.int -> bigInt,
+                           trivialAdj: bigInt * bigInt -> bigInt)
+                          (num: bigInt, den: bigInt): bigInt =
+            if areSmall (num, den) then
+               small (num, den)
+            else
+               let 
+                  val nlimbs = numLimbs num
+                  val dlimbs = numLimbs den
+               in 
+                  if S.< (nlimbs, dlimbs) then
+                     (* must check and possibly adjust the result sign in the
+                      * cases where it must conform to the [opposite of the] sign 
+                      * of the denominator *)
+                     trivialAdj (num, den)
+                  else if den = zero then
+                     raise Div
+                  else
+                     big (num, den, reserve (dlimbs, 0))
+               end
+
+         (* Combined Division and Remainder function with various options for
+          * rounding methods 
+          * Takes in all the various options for both bigDivision and bigRemainder
+          *)
+         fun bigDRComb ((smallD: bigInt * bigInt -> bigInt, (* small division *)
+                         smallR: bigInt * bigInt -> bigInt), (* small remainder *)
+                        (* big division/remainder *)
+                        big: bigInt * bigInt * Sz.int -> bigInt vector,
+                        d_extra: S.int, (* extra for the quotient *)
+                        (* trivial case sign adjuster for the remainder *)
+                        r_trivialAdj: bigInt * bigInt -> bigInt)
+                        (num: bigInt, den: bigInt): bigInt = (* produced function arguments *)
             if areSmall (num, den) then
                (* the small versions are not optimized together,
                 * as this would not save a significant amount
                 * of time *)
-               (smallQuot (num, den), smallRem (num, den))
+               (smallD (num, den), smallR (num, den))
             else  (* arguments are large *)
                let
                   val (nlimbs, dlimbs) = (numLimbs num, numLimbs den)
                in
                   (* try to avoid expensive operation in trivial cases *)
                   if S.< (nlimbs, dlimbs) then
-                     (zero, num)
+                     (zero, r_trivialAdjuster (num, den))
                   else if den = zero then
                      raise Div
                   else  (* must perform operation *)
                      let
-                        val q_reserve_nA = quotReserve_noAlign (nlimbs, dlimbs)
-                        val r_reserve_nA = remReserve_noAlign (nlimbs, dlimbs)
+                        val d_reserve = reserve (S.- (nlimbs, dlimbs), d_extra)
+                        val r_reserve = reserve (dlimbs, 0)
+                        val vec_reserve = reserveIntInfVector 2
                         open Sz
-                        val qrs =
-                           Prim.quotRem (num, den,
-                                         (* Reserve info for the results and a vector containing them
-                                          * Add in an alignment for each result
-                                          *)
-                                         reserveIntinfVector 2 + q_reserve_nA + r_reserve_nA
-                                            + 0w2 * (case MLton.Align.align of
-                                                        MLton.Align.Align4 => 0w3
-                                                      | MLton.Align.Align8 => 0w7),
-                                         (* Also store the individual reservation byte counts - will be
-                                          * needed on the runtime side to determine how much space the
-                                          * rem argument should be pushed forward.
-                                          * 
-                                          * Don't add in the alignments here - they can be calculated more
-                                          * precisely on the runtime side. This could prevent the call to the
-                                          * gc primitive from performing an avoidable memmove.
-                                          *)
-                                         q_reserve_nA,
-                                         r_reserve_nA)
+                        val results =
+                           big (num, den, reserveIntinfVector 2 + d_reserve + r_reserve)
                         val sub = Primitive.Vector.unsafeSub
                      in
                         (sub (qrs, 0), sub (qrs, 1))
                      end
                end
+      in
+         val bigAdd = make (I.+!, Prim.+, S.max, 1)
+         val bigSub = make (I.-!, Prim.-, S.max, 1)
+         val bigMul = make (I.*!, Prim.*, S.+, 0)
+
+         (* Division primitives
+          * Ceiling division might round up and require another limb *)
+         val bigCeilDiv = bigDivision (smallCeilDiv, Prim.ceilDiv, 2)
+         val bigDiv = bigDivision (smallDiv, Prim.div, 1)
+         val bigQuot = bigDivision (smallQuot, Prim.quot, 1)
+
+         (* Remainder primitives *)
+         val bigCeilMod = bigRemainder (smallCeilMod, Prim.ceilMod, trivial_adj_ceilMod)
+         val bigMod = bigRemainder (smallMod, Prim.mod, trivial_adj_mod)
+         val bigRem = bigRemainder (smallRem, Prim.rem, trivial_adj_rem)
+
+         (* Division/Remainder combined primitives *)
+         val bigCeilDivMod =
+            bigDRComb ((smallCeilDiv, smallCeilMod), Prim.ceilDivMod, 2, trivial_adj_ceilMod)
+         val bigDivMod = bigDRComb ((smallDiv, smallMod), Prim.divMod, 1, trivial_adj_mod)
+         val bigQuotRem = bigDRComb ((smallQuot, smallRem), Prim.quotRem, 1, trivial_adj_rem)
       end
 
       fun bigNeg (arg: bigInt): bigInt =
@@ -1288,48 +1353,6 @@ structure IntInf =
          val bigLEU = S.<=
          val bigGTU = S.>
          val bigGEU = S.>=
-      end
-
-      local
-         val op + = bigAdd
-         val op - = bigSub
-         val op > = bigGT
-         val op >= = bigGE
-         val op < = bigLT
-         val quot = bigQuot
-         val rem = bigRem
-      in
-         fun bigDiv (x, y) =
-            if x >= zero
-               then if y > zero
-                       then quot (x, y)
-                       else if y < zero
-                               then if x = zero
-                                       then zero
-                                       else quot (x - one, y) - one
-                               else raise Div
-               else if y < zero
-                       then quot (x, y)
-                       else if y > zero
-                               then quot (x + one, y) - one
-                               else raise Div
-
-         fun bigMod (x, y) =
-            if x >= zero
-               then if y > zero
-                       then rem (x, y)
-                       else if y < zero
-                               then if x = zero
-                                       then zero
-                                       else rem (x - one, y) + (one + y)
-                               else raise Div
-               else if y < zero
-                       then rem (x, y)
-                       else if y > zero
-                               then rem (x + one, y) + (y - one)
-                               else raise Div
-
-         fun bigDivMod (x, y) = (bigDiv (x, y), bigMod (x, y))
       end
 
       local

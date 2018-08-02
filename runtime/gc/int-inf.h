@@ -58,6 +58,8 @@ COMPILE_TIME_ASSERT(sizeof_mp_limb_t__compat__sizeof_objptr,
         1 : (int)(sizeof(objptr) / sizeof(mp_limb_t)))
 
 PRIVATE void initIntInf (GC_state s);
+
+static inline int intInf_lengthInternal (GC_state s, objptr arg);
 static inline void fillIntInfArg (GC_state s, objptr arg, __mpz_struct *res, 
                                   mp_limb_t space[LIMBS_PER_OBJPTR + 1]);
 static inline void initIntInfRes (GC_state s, __mpz_struct *res, size_t bytes);
@@ -66,12 +68,21 @@ static inline GC_objptr_sequence initIntInfRes_2 (GC_state s,
                                                   // total bytes needed by all args
                                                   // kept separately from other sizes for assertion
                                                   size_t tot_bytes,
-                                                  size_t l_bytes_noAlign, size_t r_bytes_noAlign);
+                                                  size_t l_bytes);
 static inline objptr finiIntInfRes (GC_state s, __mpz_struct *res, size_t bytes);
 static inline objptr finiIntInfRes_2 (GC_state s,
                                       __mpz_struct *l_res, __mpz_struct *r_res,
-                                      size_t l_bytes, size_t r_bytes,
+                                      size_t tot_bytes,
                                       GC_objptr_sequence finals);
+
+/*
+ * Functions that compute numbers of resulting limbs from passed in results
+ * These are passed to operations that return multiple results and therefore
+ * must be made visible to runtime/basis/IntInf/int-inf.c
+ */
+PRIVATE inline void nonCeilQuotLimbs(int n_limbs, int d_limbs, int *r1_limbs, int *r2_limbs);
+PRIVATE inline void ceilQuotLimbs(int n_limbs, int d_limbs, int *r1_limbs, int *r2_limbs);
+
 #endif /* (defined (MLTON_GC_INTERNAL_FUNCS)) */
 
 #if (defined (MLTON_GC_INTERNAL_BASIS))
@@ -83,7 +94,11 @@ PRIVATE objptr IntInf_binop (GC_state s, objptr lhs, objptr rhs, size_t bytes,
 
 PRIVATE objptr IntInf_binop_2 (GC_state s,
                                 objptr lhs, objptr rhs,
-                                size_t tot_bytes, size_t l_bytes, size_t r_bytes,
+                                size_t tot_bytes,
+                                void(*result_limbs)(int left_arg_limbs,
+                                                    int right_arg_limbs,
+                                                    int *left_result_limbs,
+                                                    int *right_result_limbs),
                                 void(*binop)(__mpz_struct *l_res_mpz,
                                              __mpz_struct *r_res_mpz,
                                              const __mpz_struct *lhsspace,

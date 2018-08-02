@@ -34,6 +34,49 @@ static inline GC_intInf toBignum (GC_state s, objptr arg) {
   return bp;
 }
 
+/* DETERMINING ARGUMENT/RESULT SIZE */
+/*
+ * Quick function for determining the number of limbs the intInf holds other than
+ * the possible isNeg field
+ * 
+ * This is used for determining the sizes of results in a multiple-result-returning
+ * method at or before result initialization time.
+ */
+static inline int intInf_limbsInternal (GC_state s, objptr arg) {
+  if (isSmall(arg)) {
+    return 1;  // is only one limb
+  } else {
+    GC_intInf bp = toBignum (s, arg);
+    return bp->length - 1;  // remove the isNeg field
+  }
+}
+
+/*
+ * Number of bytes needed for the quotient and remainder given the args and the
+ * number of extra limbs required for the quotient (the remainder always takes
+ * up only as many as the denominator)
+ */
+static inline void quotRemLimbs_quotExtra(int n_limbs, int d_limbs, int extra,
+                                          int *r1_limbs, int *r2_limbs) {
+  *r1_limbs = n_limbs - d_limbs + extra;
+  *r2_limbs = d_limbs;
+}
+
+// make different versions of the above function by "currying" (not really) extra
+void nonCeilQuotLimbs (int n_limbs, int d_limbs, int *r1_limbs, int *r2_limbs)
+  { quotLimbsExtra (n_limbs, d_limbs, 1, r1_limbs, r2_limbs); }
+void ceilQuotLimbs (int n_limbs, int d_limbs, int *r1_limbs, int *r2_limbs)
+  { quotLimbsExtra (n_limbs, d_limbs, 2, r1_limbs, r2_limbs); }
+
+/*
+ * An analog of the reserve method on the SML side (but probably with more
+ * accurate alignment)
+ */
+static inline size_t limbsToSize (GC_state s, int limbs) {
+  // +1 is for isNeg field
+  return align((size_t)limbs * sizeof (mp_limb_t) + 1 + GC_SEQUENCE_METADATA_SIZE, s->alignment);
+}
+
 /*
  * Given an intInf, a pointer to an __mpz_struct and space large
  * enough to contain LIMBS_PER_OBJPTR + 1 limbs, fill in the
@@ -130,7 +173,7 @@ void initIntInfRes (GC_state s, __mpz_struct *res,
 GC_objptr_sequence initIntInfRes_2 (GC_state s,
                                     __mpz_struct *lres, __mpz_struct *rres,
                                     ARG_USED_FOR_ASSERT size_t tot_bytes,
-                                    size_t l_bytes, size_t r_bytes) {
+                                    size_t l_bytes) {
   // make sure there are enough bytes for everything
   assert (tot_bytes <= (size_t)(s->limitPlusSlop - s->frontier));
 
@@ -328,7 +371,8 @@ objptr finiIntInfRes (GC_state s, __mpz_struct *res, size_t bytes) {
  * the program level)
  */
 objptr finiIntInfRes_2 (GC_state s, __mpz_struct *l_res, __mpz_struct *r_res,
-                        size_t l_bytes, size_t r_bytes, GC_objptr_sequence finals) {
+                        size_t l_bytes, size_t r_bytes,
+                        GC_objptr_sequence finals) {
   GC_intInf l_bp, r_bp;
   int l_size, r_size;
   objptr l_final, r_final;
@@ -341,8 +385,8 @@ objptr finiIntInfRes_2 (GC_state s, __mpz_struct *l_res, __mpz_struct *r_res,
   __mpz_is_correct_fmt (r_res);
 
   if (DEBUG_INT_INF)
-    fprintf (stderr, "finiIntInfRes_2 ("FMTPTR", "FMTPTR", %"PRIuMAX", %"PRIuMAX")\n",
-             (uintptr_t)l_res, (uintptr_t)r_res, (uintmax_t)l_bytes, (uintmax_t)r_bytes);
+    fprintf (stderr, "finiIntInfRes_2 ("FMTPTR", "FMTPTR", %"PRIuMAX", %"FMTPTR")\n",
+             (uintptr_t)l_res, (uintptr_t)r_res, (uintmax_t)tot_bytes, (uintptr_t)finals);
   if (DEBUG_INT_INF_DETAILED)
     fprintf (stderr, "l_res --> %s\nr_res --> %s\n",
              mpz_get_str (NULL, 10, l_res), mpz_get_str (NULL, 10, r_res));
@@ -409,7 +453,10 @@ objptr IntInf_binop (GC_state s,
 objptr IntInf_binop_2 (GC_state s,
                        objptr lhs, objptr rhs,
                        size_t tot_bytes,
-                       size_t l_bytes_noAlign, size_t r_bytes_noAlign,
+                       void(*result_limbs)(int left_arg_limbs,
+                                           int right_arg_limbs,
+                                           int *left_result_limbs,
+                                           int *right_result_limbs),
                        void(*binop)(__mpz_struct *l_res_mpz,
                                     __mpz_struct *r_res_mpz,
                                     const __mpz_struct *lhsspace,
@@ -418,24 +465,23 @@ objptr IntInf_binop_2 (GC_state s,
   __mpz_struct lhsmpz, rhsmpz, l_res_mpz, r_res_mpz;
   mp_limb_t lhsspace[LIMBS_PER_OBJPTR + 1], rhsspace[LIMBS_PER_OBJPTR + 1];
 
-  /*
-   * Compute these alignments here so that we can avoid unnecessary memmoves resulting
-   * from adding in potentially overkill alignment predictions on the SML side
-   */
-  size_t l_bytes = align(l_bytes_noAlign, s->alignment);
-  size_t r_bytes = align(r_bytes_noAlign, s->alignment);
-
   if (DEBUG_INT_INF)
     fprintf (stderr, "IntInf_binop_2 ("FMTOBJPTR", "FMTOBJPTR", %"PRIuMAX", %"PRIuMAX")\n",
              lhs, rhs, (uintmax_t)l_bytes, (uintmax_t)r_bytes);
 
+  // get the sizes for the left argument here
+  int num_limbs = intInf_limbsInternal(lhs);
+  int denom_limbs = intInf_limbsInternal(rhs);
+  int l_limbs, r_limbs;
+  result_limbs(num_limbs, denom_limbs, &l_limbs, &r_limbs);
+  size_t l_bytes = limbsToSize(l_limbs), r_bytes = limbsToSize(r_limbs);
+
   // get the sequence for storing the final results (will be allocated on the stack here)
   GC_objptr_sequence finals =
-    initIntInfRes_2(s, &l_res_mpz, &r_res_mpz, tot_bytes, l_bytes, r_bytes);
+    initIntInfRes_2(s, &l_res_mpz, &r_res_mpz, tot_bytes, l_bytes);
   fillIntInfArg (s, lhs, &lhsmpz, lhsspace);
   fillIntInfArg (s, rhs, &rhsmpz, rhsspace);
   binop (&l_res_mpz, &r_res_mpz, &lhsmpz, &rhsmpz);
-
   return finiIntInfRes_2 (s, &l_res_mpz, &r_res_mpz, l_bytes, r_bytes, finals);
 }
 

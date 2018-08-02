@@ -8,6 +8,15 @@
 
 (* Primitive names are special -- see atoms/prim.fun. *)
 
+(*
+ * Currently, returning tuples from primitives is not supported, so multiple IntInf
+ * results are returned in vector form (so that such primitives can be optimized as
+ * Functional).
+ * The current type scheme for such primitives is as follows:
+ *  { int args }      { total size of all results & vector }   { returned results }
+ *  int * ... * int   * C_Size.t                               -> int vector
+ *)
+
 structure Primitive = struct
 
 open Primitive
@@ -19,20 +28,23 @@ structure IntInf =
       val + = _prim "IntInf_add": int * int * C_Size.t -> int;
       val andb = _prim "IntInf_andb": int * int * C_Size.t -> int;
       val ~>> = _prim "IntInf_arshift": int * Word32.word * C_Size.t -> int;
+      val ceilDiv = _prim "IntInf_ceilDiv": int * int * C_Size.t -> int;
+      val ceilDivMod = _prim "IntInf_ceilDivMod": int * int * C_Size.t -> int vector;
+      val ceilMod = _prim "IntInf_ceilMod": int * int * C_Size.t -> int;
       val compare = _prim "IntInf_compare": int * int -> Int32.int;
+      val div = _prim "IntInf_div": int * int * C_Size.t -> int;
+      val divMod = _prim "IntInf_divMod": int * int * C_Size.t -> int vector;
       val fromVector = _prim "WordVector_toIntInf": C_MPLimb.t vector -> int;
       val fromWord = _prim "Word_toIntInf": ObjptrWord.word -> int;
       val gcd = _prim "IntInf_gcd": int * int * C_Size.t -> int;
       val << = _prim "IntInf_lshift": int * Word32.word * C_Size.t -> int;
+      val mod = _prim "IntInf_mod": int * int * C_Size.t -> int;
       val * = _prim "IntInf_mul": int * int * C_Size.t -> int;
       val ~ = _prim "IntInf_neg": int * C_Size.t -> int;
       val notb = _prim "IntInf_notb": int * C_Size.t -> int;
       val orb = _prim "IntInf_orb": int * int * C_Size.t -> int;
       val quot = _prim "IntInf_quot": int * int * C_Size.t -> int;
-      val quotRem =
-         (* C_Size args: the total size, the left result size, the right result size
-          * (see the C code) *)
-         _prim "IntInf_quotRem": int * int * C_Size.t * C_Size.t * C_Size.t -> int vector;
+      val quotRem = _prim "IntInf_quotRem": int * int * C_Size.t -> int vector;
       val rem = _prim "IntInf_rem": int * int * C_Size.t -> int;
       val - = _prim "IntInf_sub": int * int * C_Size.t -> int;
       val toString =

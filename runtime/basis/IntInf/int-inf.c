@@ -37,11 +37,53 @@ objptr IntInf_andb (GC_state s, objptr lhs, objptr rhs, size_t bytes) {
   return IntInf_binop (s, lhs, rhs, bytes, &mpz_and);
 }
 
+objptr IntInf_ceilDiv (GC_state s, objptr lhs, objptr rhs, size_t bytes) {
+  if (DEBUG_INT_INF)
+    fprintf (stderr, "IntInf_ceilDiv ("FMTOBJPTR", "FMTOBJPTR", %"PRIuMAX")\n",
+             lhs, rhs, (uintmax_t)bytes);
+  return IntInf_binop (s, lhs, rhs, bytes, &mpz_cdiv_q);
+}
+
+objptr IntInf_ceilDivMod (GC_state s, objptr lhs, objptr rhs, size_t tot_bytes) {
+  if (DEBUG_INT_INF)
+    fprintf (stderr, "IntInf_ceilDivMod ("FMTOBJPTR", "FMTOBJPTR", %"PRIuMAX")\n",
+             lhs, rhs, (uintmax_t)tot_bytes);
+  return IntInf_binop (s, lhs, rhs, tot_bytes, &ceilQuotLimbs, &mpz_cdiv_qr);
+}
+
+objptr IntInf_ceilMod (GC_state s, objptr lhs, objptr rhs, size_t bytes) {
+  if (DEBUG_INT_INF)
+    fprintf (stderr, "IntInf_ceilMod ("FMTOBJPTR", "FMTOBJPTR", %"PRIuMAX")\n",
+             lhs, rhs, (uintmax_t)bytes);
+  return IntInf_binop (s, lhs, rhs, bytes, &mpz_cdiv_r);
+}
+
+objptr IntInf_div (GC_state s, objptr lhs, objptr rhs, size_t bytes) {
+  if (DEBUG_INT_INF)
+    fprintf (stderr, "IntInf_div ("FMTOBJPTR", "FMTOBJPTR", %"PRIuMAX")\n",
+             lhs, rhs, (uintmax_t)bytes);
+  return IntInf_binop (s, lhs, rhs, bytes, &mpz_fdiv_q);
+}
+
+objptr IntInf_divMod (GC_state s, objptr lhs, objptr rhs, size_t tot_bytes) {
+  if (DEBUG_INT_INF)
+    fprintf (stderr, "IntInf_divMod ("FMTOBJPTR", "FMTOBJPTR", %"PRIuMAX")\n",
+             lhs, rhs, (uintmax_t)tot_bytes);
+  return IntInf_binop (s, lhs, rhs, tot_bytes, &nonCeilQuotLimbs, &mpz_fdiv_qr);
+}
+
 objptr IntInf_gcd (GC_state s, objptr lhs, objptr rhs, size_t bytes) {
   if (DEBUG_INT_INF)
     fprintf (stderr, "IntInf_gcd ("FMTOBJPTR", "FMTOBJPTR", %"PRIuMAX")\n",
              lhs, rhs, (uintmax_t)bytes);
   return IntInf_binop (s, lhs, rhs, bytes, &mpz_gcd);
+}
+
+objptr IntInf_mod (GC_state s, objptr lhs, objptr rhs, size_t bytes) {
+  if (DEBUG_INT_INF)
+    fprintf (stderr, "IntInf_mod ("FMTOBJPTR", "FMTOBJPTR", %"PRIuMAX")\n",
+             lhs, rhs, (uintmax_t)bytes);
+  return IntInf_binop (s, lhs, rhs, bytes, &mpz_fdiv_r);
 }
 
 objptr IntInf_mul (GC_state s, objptr lhs, objptr rhs, size_t bytes) {
@@ -65,14 +107,11 @@ objptr IntInf_quot (GC_state s, objptr lhs, objptr rhs, size_t bytes) {
   return IntInf_binop (s, lhs, rhs, bytes, &mpz_tdiv_q);
 }
 
-objptr IntInf_quotRem (GC_state s,
-                       objptr lhs, objptr rhs,
-                       size_t tot_bytes,
-                       size_t l_bytes_noAlign, size_t r_bytes_noAlign) {
+objptr IntInf_quotRem (GC_state s, objptr lhs, objptr rhs, size_t tot_bytes) {
   if (DEBUG_INT_INF)
     fprintf (stderr, "IntInf_quotRem ("FMTOBJPTR", "FMTOBJPTR", %"PRIuMAX", %"PRIuMAX", %"PRIuMAX")\n",
              lhs, rhs, (uintmax_t)tot_bytes, (uintmax_t)l_bytes_noAlign, (uintmax_t)r_bytes_noAlign);
-  return IntInf_binop_2 (s, lhs, rhs, tot_bytes, l_bytes_noAlign, r_bytes_noAlign, &mpz_tdiv_qr);
+  return IntInf_binop_2 (s, lhs, rhs, tot_bytes, &nonCeilQuotLimbs, &mpz_tdiv_qr);
 }
 
 objptr IntInf_rem (GC_state s, objptr lhs, objptr rhs, size_t bytes) {
