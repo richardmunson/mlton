@@ -115,7 +115,7 @@ PRIVATE objptr IntInf_strop (GC_state s, objptr arg, Int32_t base, size_t bytes,
  * These are passed to operations that return multiple results and therefore
  * must be made visible to runtime/basis/IntInf/int-inf.c
  */
-PRIVATE inline void nonCeilQuotLimbs(int n_limbs, int d_limbs, int *r1_limbs, int *r2_limbs);
-PRIVATE inline void ceilQuotLimbs(int n_limbs, int d_limbs, int *r1_limbs, int *r2_limbs);
+PRIVATE void nonCeilQuotLimbs(int n_limbs, int d_limbs, int *r1_limbs, int *r2_limbs);
+PRIVATE void ceilQuotLimbs(int n_limbs, int d_limbs, int *r1_limbs, int *r2_limbs);
 
 #endif /* (defined (MLTON_GC_INTERNAL_BASIS)) */
