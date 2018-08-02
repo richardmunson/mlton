@@ -1077,7 +1077,7 @@ structure IntInf =
                   end
             end
 
-         val smallCeilDiv = smallDivision (fn (n, d) => (I.~ o I.div) (n, I.~ d))
+         val smallCeilDiv = smallDivision (fn (n, d) => (I.~ (I.div (n, I.~ d))))
          val smallDiv = smallDivision I.div
          val smallQuot = smallDivision I.quot
 
@@ -1098,7 +1098,7 @@ structure IntInf =
 
          (* big division/remainder curried factories *)
          fun bigDivision (small: bigInt * bigInt -> bigInt,
-                          big: bigInt * bigInt * Sz.int -> bigInt,
+                          big: bigInt * bigInt * Sz.t -> bigInt,
                           extra: S.int)
                          (num: bigInt, den: bigInt): bigInt =
             if areSmall (num, den) then
@@ -1116,50 +1116,8 @@ structure IntInf =
                      big (num, den, reserve (S.- (nlimbs, dlimbs), extra))
                end
 
-         (*
-          * Adjust the sign of the remainder if that is necessary for the
-          * particular rounding method used in the trivial case where
-          * limbs(num) < limbs(denom)
-          * 
-          * These will be passed to the remainder factories
-          *)
-         (* ceilMod adjuster - result should have opposite sign of den.
-          * If signs are the same, subtract the denominator from
-          * the numerator, yielding a result that has the opposite
-          * sign of the denominator *)
-         fun trivial_adj_ceilMod (num, den) =
-            if den < 0 then
-               if num >= 0 then
-                  num
-               else
-                  Prim.- (num, den)
-            else
-               if num <= 0 then
-                  num
-               else
-                  Prim.- (num, den)
-
-         (* mod adjuster - Result should have same sign as den.
-          * If signs are not the same, add the denominator to the
-          * numerator, yielding a result that has the same sign
-          * as the denominator *)
-         fun trivial_adj_mod (num, den) =
-            if den < 0 then
-               if num <= 0 then
-                  num
-               else
-                  Prim.+ (num, den)
-            else
-               if num >= 0 then
-                  num
-               else
-                  Prim.+ (num, den)
-
-         (* rem adjuster - nothing to do, just return num with no processing. *)
-         fun trivial_adj_rem (num, den) = num
-
          fun bigRemainder (small: bigInt * bigInt -> bigInt,
-                           big: bigInt * bigInt * Sz.int -> bigInt,
+                           big: bigInt * bigInt * Sz.t -> bigInt,
                            trivialAdj: bigInt * bigInt -> bigInt)
                           (num: bigInt, den: bigInt): bigInt =
             if areSmall (num, den) then
@@ -1187,11 +1145,11 @@ structure IntInf =
          fun bigDRComb ((smallD: bigInt * bigInt -> bigInt, (* small division *)
                          smallR: bigInt * bigInt -> bigInt), (* small remainder *)
                         (* big division/remainder *)
-                        big: bigInt * bigInt * Sz.int -> bigInt vector,
+                        big: bigInt * bigInt * Sz.t -> bigInt vector,
                         d_extra: S.int, (* extra for the quotient *)
                         (* trivial case sign adjuster for the remainder *)
                         r_trivialAdj: bigInt * bigInt -> bigInt)
-                        (num: bigInt, den: bigInt): bigInt = (* produced function arguments *)
+                        (num: bigInt, den: bigInt): (bigInt, bigInt) =
             if areSmall (num, den) then
                (* the small versions are not optimized together,
                 * as this would not save a significant amount
@@ -1203,7 +1161,7 @@ structure IntInf =
                in
                   (* try to avoid expensive operation in trivial cases *)
                   if S.< (nlimbs, dlimbs) then
-                     (zero, r_trivialAdjuster (num, den))
+                     (zero, r_trivialAdj (num, den))
                   else if den = zero then
                      raise Div
                   else  (* must perform operation *)
@@ -1214,9 +1172,8 @@ structure IntInf =
                         open Sz
                         val results =
                            big (num, den, reserveIntinfVector 2 + d_reserve + r_reserve)
-                        val sub = Primitive.Vector.unsafeSub
                      in
-                        (sub (qrs, 0), sub (qrs, 1))
+                        (V.unsafeSub (results, 0), V.unsafeSub (results, 1))
                      end
                end
       in
@@ -1224,22 +1181,65 @@ structure IntInf =
          val bigSub = make (I.-!, Prim.-, S.max, 1)
          val bigMul = make (I.*!, Prim.*, S.+, 0)
 
-         (* Division primitives
-          * Ceiling division might round up and require another limb *)
-         val bigCeilDiv = bigDivision (smallCeilDiv, Prim.ceilDiv, 2)
-         val bigDiv = bigDivision (smallDiv, Prim.div, 1)
-         val bigQuot = bigDivision (smallQuot, Prim.quot, 1)
+         local
+            (*
+             * Adjust the sign of the remainder if that is necessary for the
+             * particular rounding method used in the trivial case where
+             * limbs(num) < limbs(denom)
+             * 
+             * These will be passed to the remainder factories
+             *)
+            (* ceilMod adjuster - result should have opposite sign of den.
+             * If signs are the same, subtract the denominator from
+             * the numerator, yielding a result that has the opposite
+             * sign of the denominator *)
+            fun trivial_adj_ceilMod (num, den) =
+               if bigIsNeg den then
+                  if not bigIsNeg num then
+                     num
+                  else
+                     bigSub (num, den)
+               else
+                  if isBigNeg num then
+                     num
+                  else
+                     bigSub (num, den)
 
-         (* Remainder primitives *)
-         val bigCeilMod = bigRemainder (smallCeilMod, Prim.ceilMod, trivial_adj_ceilMod)
-         val bigMod = bigRemainder (smallMod, Prim.mod, trivial_adj_mod)
-         val bigRem = bigRemainder (smallRem, Prim.rem, trivial_adj_rem)
+            (* mod adjuster - Result should have same sign as den.
+             * If signs are not the same, add the denominator to the
+             * numerator, yielding a result that has the same sign
+             * as the denominator *)
+            fun trivial_adj_mod (num, den) =
+               if isBigNeg den then
+                  if isBigNeg num then
+                     num
+                  else
+                     bigAdd (num, den)
+               else
+                  if not isBigNeg num then
+                     num
+                  else
+                     bigAdd (num, den)
+            (* rem adjuster - nothing to do, just return num with no processing. *)
+            fun trivial_adj_rem (num, den) = num
+         in
+            (* Division primitives
+             * Ceiling division might round up and require another limb *)
+            val bigCeilDiv = bigDivision (smallCeilDiv, Prim.ceilDiv, 2)
+            val bigDiv = bigDivision (smallDiv, Prim.div, 1)
+            val bigQuot = bigDivision (smallQuot, Prim.quot, 1)
 
-         (* Division/Remainder combined primitives *)
-         val bigCeilDivMod =
-            bigDRComb ((smallCeilDiv, smallCeilMod), Prim.ceilDivMod, 2, trivial_adj_ceilMod)
-         val bigDivMod = bigDRComb ((smallDiv, smallMod), Prim.divMod, 1, trivial_adj_mod)
-         val bigQuotRem = bigDRComb ((smallQuot, smallRem), Prim.quotRem, 1, trivial_adj_rem)
+            (* Remainder primitives *)
+            val bigCeilMod = bigRemainder (smallCeilMod, Prim.ceilMod, trivial_adj_ceilMod)
+            val bigMod = bigRemainder (smallMod, Prim.mod, trivial_adj_mod)
+            val bigRem = bigRemainder (smallRem, Prim.rem, trivial_adj_rem)
+
+            (* Division/Remainder combined primitives *)
+            val bigCeilDivMod =
+               bigDRComb ((smallCeilDiv, smallCeilMod), Prim.ceilDivMod, 2, trivial_adj_ceilMod)
+            val bigDivMod = bigDRComb ((smallDiv, smallMod), Prim.divMod, 1, trivial_adj_mod)
+            val bigQuotRem = bigDRComb ((smallQuot, smallRem), Prim.quotRem, 1, trivial_adj_rem)
+         end
       end
 
       fun bigNeg (arg: bigInt): bigInt =
@@ -1366,7 +1366,7 @@ structure IntInf =
                   in
                      ans
                   end
-               else bigOp (lhs, rhs, 
+               else bigOp (lhs, rhs,
                            reserve (S.max (numLimbs lhs, numLimbs rhs), 0))
       in
          val bigAndb = make (W.andb, Prim.andb)
