@@ -75,14 +75,6 @@ static inline objptr finiIntInfRes_2 (GC_state s,
                                       size_t l_bytes, size_t r_bytes,
                                       GC_objptr_sequence finals);
 
-/*
- * Functions that compute numbers of resulting limbs from passed in results
- * These are passed to operations that return multiple results and therefore
- * must be made visible to runtime/basis/IntInf/int-inf.c
- */
-PRIVATE inline void nonCeilQuotLimbs(int n_limbs, int d_limbs, int *r1_limbs, int *r2_limbs);
-PRIVATE inline void ceilQuotLimbs(int n_limbs, int d_limbs, int *r1_limbs, int *r2_limbs);
-
 #endif /* (defined (MLTON_GC_INTERNAL_FUNCS)) */
 
 #if (defined (MLTON_GC_INTERNAL_BASIS))
@@ -117,5 +109,13 @@ PRIVATE objptr IntInf_strop (GC_state s, objptr arg, Int32_t base, size_t bytes,
                              char*(*strop)(char *str,
                                            int base,
                                            const __mpz_struct *argspace));
+
+/*
+ * Functions that compute numbers of resulting limbs from passed in results
+ * These are passed to operations that return multiple results and therefore
+ * must be made visible to runtime/basis/IntInf/int-inf.c
+ */
+PRIVATE inline void nonCeilQuotLimbs(int n_limbs, int d_limbs, int *r1_limbs, int *r2_limbs);
+PRIVATE inline void ceilQuotLimbs(int n_limbs, int d_limbs, int *r1_limbs, int *r2_limbs);
 
 #endif /* (defined (MLTON_GC_INTERNAL_BASIS)) */

@@ -5,13 +5,17 @@
 
 PRIVATE objptr IntInf_add (GC_state s, objptr lhs, objptr rhs, size_t bytes);
 PRIVATE objptr IntInf_andb (GC_state s, objptr lhs, objptr rhs, size_t bytes);
+PRIVATE objptr IntInf_ceilDiv (GC_state s, objptr lhs, objptr rhs, size_t bytes);
+PRIVATE objptr IntInf_ceilDivMod (GC_state s, objptr lhs, objptr rhs, size_t tot_bytes);
+PRIVATE objptr IntInf_ceilMod (GC_state s, objptr lhs, objptr rhs, size_t bytes);
+PRIVATE objptr IntInf_div (GC_state s, objptr lhs, objptr rhs, size_t bytes);
+PRIVATE objptr IntInf_divMod (GC_state s, objptr lhs, objptr rhs, size_t tot_bytes);
 PRIVATE objptr IntInf_gcd (GC_state s, objptr lhs, objptr rhs, size_t bytes);
+PRIVATE objptr IntInf_mod (GC_state s, objptr lhs, objptr rhs, size_t bytes);
 PRIVATE objptr IntInf_mul (GC_state s, objptr lhs, objptr rhs, size_t bytes);
 PRIVATE objptr IntInf_orb (GC_state s, objptr lhs, objptr rhs, size_t bytes);
 PRIVATE objptr IntInf_quot (GC_state s, objptr lhs, objptr rhs, size_t bytes);
-PRIVATE objptr IntInf_quotRem (GC_state s,
-                               objptr lhs, objptr rhs,
-                               size_t tot_bytes, size_t l_bytes, size_t r_bytes);
+PRIVATE objptr IntInf_quotRem (GC_state s, objptr lhs, objptr rhs, size_t tot_bytes);
 PRIVATE objptr IntInf_rem (GC_state s, objptr lhs, objptr rhs, size_t bytes);
 PRIVATE objptr IntInf_sub (GC_state s, objptr lhs, objptr rhs, size_t bytes);
 PRIVATE objptr IntInf_xorb (GC_state s, objptr lhs, objptr rhs, size_t bytes);
@@ -109,8 +113,8 @@ objptr IntInf_quot (GC_state s, objptr lhs, objptr rhs, size_t bytes) {
 
 objptr IntInf_quotRem (GC_state s, objptr lhs, objptr rhs, size_t tot_bytes) {
   if (DEBUG_INT_INF)
-    fprintf (stderr, "IntInf_quotRem ("FMTOBJPTR", "FMTOBJPTR", %"PRIuMAX", %"PRIuMAX", %"PRIuMAX")\n",
-             lhs, rhs, (uintmax_t)tot_bytes, (uintmax_t)l_bytes_noAlign, (uintmax_t)r_bytes_noAlign);
+    fprintf (stderr, "IntInf_quotRem ("FMTOBJPTR", "FMTOBJPTR", %"PRIuMAX")\n",
+             lhs, rhs, (uintmax_t)tot_bytes);
   return IntInf_binop_2 (s, lhs, rhs, tot_bytes, &nonCeilQuotLimbs, &mpz_tdiv_qr);
 }
 
