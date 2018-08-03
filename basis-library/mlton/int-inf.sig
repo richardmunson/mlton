@@ -11,7 +11,7 @@ signature MLTON_INT_INF =
 
       val areSmall: t * t -> bool
       val ceilDiv: t * t -> t
-      val ceilDivMod: t * t -> (t, t)
+      val ceilDivMod: t * t -> t * t
       val ceilMod: t * t -> t
       val gcd: t * t -> t
       val isSmall: t -> bool
