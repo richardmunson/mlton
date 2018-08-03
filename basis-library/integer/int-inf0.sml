@@ -1149,7 +1149,7 @@ structure IntInf =
                         d_extra: S.int, (* extra for the quotient *)
                         (* trivial case sign adjuster for the remainder *)
                         r_trivialAdj: bigInt * bigInt -> bigInt)
-                        (num: bigInt, den: bigInt): (bigInt, bigInt) =
+                        (num: bigInt, den: bigInt): bigInt * bigInt =
             if areSmall (num, den) then
                (* the small versions are not optimized together,
                 * as this would not save a significant amount
@@ -1168,10 +1168,10 @@ structure IntInf =
                      let
                         val d_reserve = reserve (S.- (nlimbs, dlimbs), d_extra)
                         val r_reserve = reserve (dlimbs, 0)
-                        val vec_reserve = reserveIntInfVector 2
+                        val vec_reserve = reserveIntinfVector 2
                         open Sz
                         val results =
-                           big (num, den, reserveIntinfVector 2 + d_reserve + r_reserve)
+                           big (num, den, vec_reserve + d_reserve + r_reserve)
                      in
                         (V.unsafeSub (results, 0), V.unsafeSub (results, 1))
                      end
