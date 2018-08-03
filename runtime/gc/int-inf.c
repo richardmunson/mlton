@@ -476,9 +476,9 @@ objptr IntInf_binop_2 (GC_state s,
   int l_limbs, r_limbs;
   fprintf (stderr, "GETTING RESULT LIMBS\n");
   result_limbs(num_limbs, denom_limbs, &l_limbs, &r_limbs);
-  fprintf ("GETTING FINAL BYTE SIZES\n");
+  fprintf (stderr, "GETTING FINAL BYTE SIZES\n");
   size_t l_bytes = limbsToSize(s, l_limbs), r_bytes = limbsToSize(s, r_limbs);
-  fprintf ("DONE CALCULATING SIZES\n");
+  fprintf (stderr, "DONE CALCULATING SIZES\n");
 
   if (DEBUG_INT_INF_DETAILED)
     fprintf (stderr, "IntInf_binop_2 computed result sizes: %"PRIuMAX", %"PRIuMAX")\n",
