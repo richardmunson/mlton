@@ -461,7 +461,7 @@ objptr IntInf_binop_2 (GC_state s,
                                     __mpz_struct *r_res_mpz,
                                     const __mpz_struct *lhsspace,
                                     const __mpz_struct *rhsspace)) {
-
+  fprintf (stderr, "ENTERING BINOP_2\n");
   __mpz_struct lhsmpz, rhsmpz, l_res_mpz, r_res_mpz;
   mp_limb_t lhsspace[LIMBS_PER_OBJPTR + 1], rhsspace[LIMBS_PER_OBJPTR + 1];
 
@@ -470,11 +470,15 @@ objptr IntInf_binop_2 (GC_state s,
              lhs, rhs, (uintmax_t)tot_bytes);
 
   // get the sizes for the left argument here
+  fprintf (stderr, "GETTING ARG LIMBS\n");
   int num_limbs = intInf_limbsInternal(s, lhs);
   int denom_limbs = intInf_limbsInternal(s, rhs);
   int l_limbs, r_limbs;
+  fprintf (stderr, "GETTING RESULT LIMBS\n");
   result_limbs(num_limbs, denom_limbs, &l_limbs, &r_limbs);
+  fprintf ("GETTING FINAL BYTE SIZES\n");
   size_t l_bytes = limbsToSize(s, l_limbs), r_bytes = limbsToSize(s, r_limbs);
+  fprintf ("DONE CALCULATING SIZES\n");
 
   if (DEBUG_INT_INF_DETAILED)
     fprintf (stderr, "IntInf_binop_2 computed result sizes: %"PRIuMAX", %"PRIuMAX")\n",
@@ -486,6 +490,7 @@ objptr IntInf_binop_2 (GC_state s,
   fillIntInfArg (s, lhs, &lhsmpz, lhsspace);
   fillIntInfArg (s, rhs, &rhsmpz, rhsspace);
   binop (&l_res_mpz, &r_res_mpz, &lhsmpz, &rhsmpz);
+  fprintf (stderr, "LEAVING BINOP_2\n");
   return finiIntInfRes_2 (s, &l_res_mpz, &r_res_mpz, l_bytes, r_bytes, finals);
 }
 
