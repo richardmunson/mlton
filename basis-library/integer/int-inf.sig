@@ -24,7 +24,7 @@ signature INT_INF_EXTRA =
 
       val areSmall: int * int -> bool
       val ceilDiv: int * int -> int
-      val ceilDivMod: int * int -> (int, int)
+      val ceilDivMod: int * int -> int * int
       val ceilMod: int * int -> int
       val gcd: int * int -> int 
       val isSmall: int -> bool
