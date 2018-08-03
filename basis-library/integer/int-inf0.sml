@@ -34,8 +34,11 @@ signature PRIM_INT_INF =
       val +! : int * int -> int
       val +? : int * int -> int
       val + : int * int -> int
-      val divMod: int * int -> int * int
+      val ceilDiv: int * int -> int
+      val ceilDivMod: int * int -> int * int
+      val ceilMod: int * int -> int
       val div: int * int -> int
+      val divMod: int * int -> int * int
       val gcd: int * int -> int
       val mod: int * int -> int
       val *! : int * int -> int
@@ -44,8 +47,8 @@ signature PRIM_INT_INF =
       val ~! : int -> int
       val ~? : int -> int
       val ~ : int -> int
-      val quotRem: int * int -> int * int
       val quot: int * int -> int
+      val quotRem: int * int -> int * int
       val rem: int * int -> int
       val -! : int * int -> int
       val -? : int * int -> int
@@ -1195,12 +1198,12 @@ structure IntInf =
              * sign of the denominator *)
             fun trivial_adj_ceilMod (num, den) =
                if bigIsNeg den then
-                  if not bigIsNeg num then
+                  if not (bigIsNeg num) then
                      num
                   else
                      bigSub (num, den)
                else
-                  if isBigNeg num then
+                  if bigIsNeg num then
                      num
                   else
                      bigSub (num, den)
@@ -1210,13 +1213,13 @@ structure IntInf =
              * numerator, yielding a result that has the same sign
              * as the denominator *)
             fun trivial_adj_mod (num, den) =
-               if isBigNeg den then
-                  if isBigNeg num then
+               if bigIsNeg den then
+                  if bigIsNeg num then
                      num
                   else
                      bigAdd (num, den)
                else
-                  if not isBigNeg num then
+                  if not (bigIsNeg num) then
                      num
                   else
                      bigAdd (num, den)
@@ -1448,8 +1451,11 @@ structure IntInf =
       val op +! = bigAdd
       val op +? = bigAdd
       val op + = bigAdd
-      val divMod = bigDivMod
+      val ceilDiv = bigCeilDiv
+      val ceilDivMod = bigCeilDivMod
+      val ceilMod = bigCeilMod
       val op div = bigDiv
+      val divMod = bigDivMod
       val gcd = bigGcd
       val op mod = bigMod
       val op *! = bigMul
@@ -1458,8 +1464,8 @@ structure IntInf =
       val op ~! = bigNeg
       val op ~? = bigNeg
       val op ~ = bigNeg
-      val quotRem = bigQuotRem
       val quot = bigQuot
+      val quotRem = bigQuotRem
       val rem = bigRem
       val op -! = bigSub
       val op -? = bigSub
