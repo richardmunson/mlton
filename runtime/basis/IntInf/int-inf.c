@@ -52,7 +52,7 @@ objptr IntInf_ceilDivMod (GC_state s, objptr lhs, objptr rhs, size_t tot_bytes) 
   if (DEBUG_INT_INF)
     fprintf (stderr, "IntInf_ceilDivMod ("FMTOBJPTR", "FMTOBJPTR", %"PRIuMAX")\n",
              lhs, rhs, (uintmax_t)tot_bytes);
-  return IntInf_binop_2 (s, lhs, rhs, tot_bytes, &ceilQuotLimbs, &mpz_cdiv_qr);
+  return IntInf_binop_2 (s, lhs, rhs, tot_bytes, &ceilDRLimbs, &mpz_cdiv_qr);
 }
 
 objptr IntInf_ceilMod (GC_state s, objptr lhs, objptr rhs, size_t bytes) {
@@ -73,7 +73,7 @@ objptr IntInf_divMod (GC_state s, objptr lhs, objptr rhs, size_t tot_bytes) {
   if (DEBUG_INT_INF)
     fprintf (stderr, "IntInf_divMod ("FMTOBJPTR", "FMTOBJPTR", %"PRIuMAX")\n",
              lhs, rhs, (uintmax_t)tot_bytes);
-  return IntInf_binop_2 (s, lhs, rhs, tot_bytes, &nonCeilQuotLimbs, &mpz_fdiv_qr);
+  return IntInf_binop_2 (s, lhs, rhs, tot_bytes, &nonCeilDRLimbs, &mpz_fdiv_qr);
 }
 
 objptr IntInf_gcd (GC_state s, objptr lhs, objptr rhs, size_t bytes) {
@@ -115,7 +115,7 @@ objptr IntInf_quotRem (GC_state s, objptr lhs, objptr rhs, size_t tot_bytes) {
   if (DEBUG_INT_INF)
     fprintf (stderr, "IntInf_quotRem ("FMTOBJPTR", "FMTOBJPTR", %"PRIuMAX")\n",
              lhs, rhs, (uintmax_t)tot_bytes);
-  return IntInf_binop_2 (s, lhs, rhs, tot_bytes, &nonCeilQuotLimbs, &mpz_tdiv_qr);
+  return IntInf_binop_2 (s, lhs, rhs, tot_bytes, &nonCeilDRLimbs, &mpz_tdiv_qr);
 }
 
 objptr IntInf_rem (GC_state s, objptr lhs, objptr rhs, size_t bytes) {
