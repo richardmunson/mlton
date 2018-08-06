@@ -463,28 +463,22 @@ objptr IntInf_binop_2 (GC_state s,
                                     const __mpz_struct *rhsspace)) {  __mpz_struct lhsmpz, rhsmpz, l_res_mpz, r_res_mpz;
   mp_limb_t lhsspace[LIMBS_PER_OBJPTR + 1], rhsspace[LIMBS_PER_OBJPTR + 1];
 
-  fprintf (stderr, "POINT 1\n");
   if (DEBUG_INT_INF)
     fprintf (stderr, "IntInf_binop_2 ("FMTOBJPTR", "FMTOBJPTR", %"PRIuMAX")\n",
              lhs, rhs, (uintmax_t)tot_bytes);
 
-  fprintf (stderr, "POINT 2\n");
   // get the sizes for the left argument here
-  int num_limbs = intInf_limbsInternal(s, lhs);
-  int denom_limbs = intInf_limbsInternal(s, rhs);
+  int num_limbs = intInf_limbsInternal(s, lhs), denom_limbs = intInf_limbsInternal(s, rhs);
 
-  fprintf (stderr, "POINT 3\n");
   // get number of bytes required for each result
   int l_limbs, r_limbs;
   result_limbs(num_limbs, denom_limbs, &l_limbs, &r_limbs);
-  fprintf (stderr, "POINT 4\n");
   size_t l_bytes = limbsToSize(s, l_limbs), r_bytes = limbsToSize(s, r_limbs);
 
   if (DEBUG_INT_INF_DETAILED)
     fprintf (stderr, "IntInf_binop_2 computed result sizes: %"PRIuMAX", %"PRIuMAX")\n",
              (uintmax_t)l_bytes, (uintmax_t)r_bytes);
 
-  fprintf (stderr, "POINT 5\n");
   // get the sequence for storing the final results (will be allocated on the stack here)
   GC_objptr_sequence finals =
     initIntInfRes_2 (s, &l_res_mpz, &r_res_mpz, tot_bytes, l_bytes);
