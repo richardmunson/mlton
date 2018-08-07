@@ -52,6 +52,15 @@ static inline int intInf_limbsInternal (GC_state s, objptr arg) {
 }
 
 /*
+ * An analog of the reserve method on the SML side (but probably with more
+ * accurate alignment)
+ */
+static inline size_t limbsToSize (GC_state s, int limbs) {
+  // +1 is for isNeg field
+  return align((size_t)limbs * sizeof (mp_limb_t) + 1 + GC_SEQUENCE_METADATA_SIZE, s->alignment);
+}
+
+/*
  * Number of bytes needed for the quotient and remainder given the args and the
  * number of extra limbs required for the quotient (the remainder always takes
  * up only as many as the denominator)
@@ -67,15 +76,6 @@ void nonCeilDRLimbs (int n_limbs, int d_limbs, int *r1_limbs, int *r2_limbs)
   { quotRemLimbs_quotExtra (n_limbs, d_limbs, 1, r1_limbs, r2_limbs); }
 void ceilDRLimbs (int n_limbs, int d_limbs, int *r1_limbs, int *r2_limbs)
   { quotRemLimbs_quotExtra (n_limbs, d_limbs, 2, r1_limbs, r2_limbs); }
-
-/*
- * An analog of the reserve method on the SML side (but probably with more
- * accurate alignment)
- */
-static inline size_t limbsToSize (GC_state s, int limbs) {
-  // +1 is for isNeg field
-  return align((size_t)limbs * sizeof (mp_limb_t) + 1 + GC_SEQUENCE_METADATA_SIZE, s->alignment);
-}
 
 /*
  * Given an intInf, a pointer to an __mpz_struct and space large
@@ -144,6 +144,34 @@ void fillIntInfArg (GC_state s, objptr arg, __mpz_struct *res,
 }
 
 /*
+ * Get the number of limbs that will have to be allocated for a result from a
+ * GC_intInf and a pointer to the end of the object
+ */
+static inline size_t get_mpz_alloc (GC_intInf bp, pointer end) {
+  return ((size_t)(end - (pointer)bp->obj.limbs)) / sizeof (mp_limb_t);
+}
+
+/*
+ * Takes in an intInf, a pointer to where its limbs should end and a pointer to
+ * an __mpz_struct representing the result and initializes the fields of the result.
+ * 
+ * The bp object is created outside of the method for greater clarity (otherwise
+ * either calls to the method would have to be nested or redundant calculations
+ * would be required)
+ */
+static inline void set_up_result (GC_intInf bp, pointer end, __mpz_struct *res) {
+  size_t limbs = ((size_t)(end - (pointer)bp->obj.limbs)) / sizeof (mp_limb_t);
+  res->alloc = (int)(min(limbs, (size_t)INT_MAX));
+  res->_mp_d = (mp_limb_t)(bp->obj.limbs);
+  res->_mp_size = 0;
+}
+
+/* RESULT INITIALIZATION
+ * We will have as much space for the limbs as there is to the end of the
+ * heap for the final result only - others will have to have their allocations
+ * monitored more carefully to prevent overlap while also minimizing gaps.
+ */
+/*
  * Initialize an __mpz_struct to use the space provided by the heap.
  */
 void initIntInfRes (GC_state s, __mpz_struct *res,
@@ -153,17 +181,8 @@ void initIntInfRes (GC_state s, __mpz_struct *res,
 
   assert (bytes <= (size_t)(s->limitPlusSlop - s->frontier));
   bp = (GC_intInf)s->frontier;
-  /* We have as much space for the limbs as there is to the end of the
-   * heap.  Divide by (sizeof(mp_limb_t)) to get number of limbs.
-   */
-  nlimbs = ((size_t)(s->limitPlusSlop - (pointer)bp->obj.limbs)) / (sizeof(mp_limb_t));
-  /* The _mp_alloc field is declared as int. 
-   * Avoid an overflowing assignment, which could happen with huge
-   * heaps.
-   */
-  res->_mp_alloc = (int)(min(nlimbs,(size_t)INT_MAX));
-  res->_mp_d = (mp_limb_t*)(bp->obj.limbs);
-  res->_mp_size = 0;
+  
+  set_up_result(bp, s->limitPlusSlop, res);
 }
 
 /*
@@ -177,30 +196,33 @@ GC_objptr_sequence initIntInfRes_2 (GC_state s,
   // make sure there are enough bytes for everything
   assert (tot_bytes <= (size_t)(s->limitPlusSlop - s->frontier));
 
-  GC_objptr_sequence seq = allocate_objptr_seq (s, GC_INTINF_VECTOR_HEADER, 2);
+  GC_objptr_sequence seq = allocate_objptr_seq(s, GC_INTINF_VECTOR_HEADER, 2);
 
-  GC_intInf bp;
+  GC_intInf bp_l, bp_r;
   size_t nl_limbs, nr_limbs;  // number of limbs that each result could need
 
+  // Get objects representing the results from the heap
+  bp_l = (GC_intInf)s->frontier;
   // ensure that this object only looks at area after the left object
-  bp = (GC_intInf)(s->frontier + l_bytes);
-  /* Amount of space for first result is amount required by the size, no more.
-   * Will need additional guaranteed heap space for the second result.
+  bp_r = (GC_intInf)((pointer)bp_l + l_bytes);
+
+  /* Amount of space for first result is amount required by the size, no more, since
+   * the second result will need some additional amount of guaranteed heap space.
    */
-  nl_limbs = l_bytes / sizeof(mp_limb_t);
+  nl_limbs = get_mpz_alloc(bp_l, (pointer)bp_r);
   /* Amount of space for second result limbs is the amount of space
    * from the end of the first until the end of the heap, since we don't need
    * further checking for another result.
    */
-  nr_limbs = ((size_t)(s->limitPlusSlop - (pointer)bp->obj.limbs)) / sizeof(mp_limb_t);
+  nr_limbs = get_mpz_alloc(bp_r, s->limitPlusSlop);
   /* The _mp_alloc field is declared as int.
    * Avoid overflowing assignments, which could happen with huge
    * heaps.
    */
   lres->_mp_alloc = (int)(min(nl_limbs,(size_t)INT_MAX));
   rres->_mp_alloc = (int)(min(nr_limbs,(size_t)INT_MAX));
-  lres->_mp_d = (mp_limb_t*)((GC_intInf)s->frontier)->obj.limbs;
-  rres->_mp_d = (mp_limb_t*)bp->obj.limbs;
+  lres->_mp_d = (mp_limb_t*)bp_l->obj.limbs;
+  rres->_mp_d = (mp_limb_t*)bp_r->obj.limbs;
   lres->_mp_size = 0;
   rres->_mp_size = 0;
 
@@ -371,8 +393,7 @@ objptr finiIntInfRes (GC_state s, __mpz_struct *res, size_t bytes) {
  * the program level)
  */
 objptr finiIntInfRes_2 (GC_state s, __mpz_struct *l_res, __mpz_struct *r_res,
-                        size_t l_bytes, size_t r_bytes,
-                        GC_objptr_sequence finals) {
+                        size_t l_bytes, size_t r_bytes, GC_objptr_sequence finals) {
   GC_intInf l_bp, r_bp;
   int l_size, r_size;
   objptr l_final, r_final;
@@ -460,14 +481,16 @@ objptr IntInf_binop_2 (GC_state s,
                        void(*binop)(__mpz_struct *l_res_mpz,
                                     __mpz_struct *r_res_mpz,
                                     const __mpz_struct *lhsspace,
-                                    const __mpz_struct *rhsspace)) {  __mpz_struct lhsmpz, rhsmpz, l_res_mpz, r_res_mpz;
+                                    const __mpz_struct *rhsspace)) {
+
+  __mpz_struct lhsmpz, rhsmpz, l_res_mpz, r_res_mpz;
   mp_limb_t lhsspace[LIMBS_PER_OBJPTR + 1], rhsspace[LIMBS_PER_OBJPTR + 1];
 
   if (DEBUG_INT_INF)
     fprintf (stderr, "IntInf_binop_2 ("FMTOBJPTR", "FMTOBJPTR", %"PRIuMAX")\n",
              lhs, rhs, (uintmax_t)tot_bytes);
 
-  // get the sizes for the left argument here
+  // get the sizes for the left and right arguments here
   int num_limbs = intInf_limbsInternal(s, lhs), denom_limbs = intInf_limbsInternal(s, rhs);
 
   // get number of bytes required for each result
@@ -481,10 +504,12 @@ objptr IntInf_binop_2 (GC_state s,
 
   // get the sequence for storing the final results (will be allocated on the stack here)
   GC_objptr_sequence finals =
-    initIntInfRes_2 (s, &l_res_mpz, &r_res_mpz, tot_bytes, l_bytes);
+    initIntInfRes_2(s, &l_res_mpz, &r_res_mpz, tot_bytes, l_bytes);
   fillIntInfArg (s, lhs, &lhsmpz, lhsspace);
   fillIntInfArg (s, rhs, &rhsmpz, rhsspace);
-  binop (&l_res_mpz, &r_res_mpz, &lhsmpz, &rhsmpz);  return finiIntInfRes_2 (s, &l_res_mpz, &r_res_mpz, l_bytes, r_bytes, finals);
+  binop (&l_res_mpz, &r_res_mpz, &lhsmpz, &rhsmpz);
+
+  return finiIntInfRes_2 (s, &l_res_mpz, &r_res_mpz, l_bytes, r_bytes, finals);
 }
 
 objptr IntInf_unop (GC_state s,
