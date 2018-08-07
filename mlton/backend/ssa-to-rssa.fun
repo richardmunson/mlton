@@ -322,11 +322,9 @@ structure CFunction =
                       target = Direct (Prim.Name.toString name)}
 
       val intInfBinary_2Res = fn name =>
-         CFunction.T {args = Vector.new6 (Type.gcState (),
+         CFunction.T {args = Vector.new4 (Type.gcState (),
                                           Type.intInf (),
                                           Type.intInf (),
-                                          Type.csize (),
-                                          Type.csize (),
                                           Type.csize ()),
                       convention = Cdecl,
                       kind = CFunction.Kind.Runtime {bytesNeeded = SOME 3,
@@ -336,11 +334,9 @@ structure CFunction =
                                                      modifiesFrontier = true,
                                                      readsStackTop = amAllocationProfiling (),
                                                      writesStackTop = false},
-                      prototype = (Vector.new6 (CType.gcState,
+                      prototype = (Vector.new4 (CType.gcState,
                                                 CType.intInf,
                                                 CType.intInf,
-                                                CType.csize (),
-                                                CType.csize (),
                                                 CType.csize ()),
                                    SOME CType.objptr),
                       return = Type.intInfVector (),

@@ -65,8 +65,7 @@ static inline GC_objptr_sequence initIntInfRes_2 (GC_state s,
                                                   __mpz_struct *lres, __mpz_struct *rres,
                                                   // total bytes needed by all args
                                                   // kept separately from other sizes for assertion
-                                                  size_t tot_bytes,
-                                                  size_t l_bytes_noAlign, size_t r_bytes_noAlign);
+                                                  size_t tot_bytes, size_t l_bytes);
 static inline objptr finiIntInfRes (GC_state s, __mpz_struct *res, size_t bytes);
 static inline objptr finiIntInfRes_2 (GC_state s,
                                       __mpz_struct *l_res, __mpz_struct *r_res,
@@ -83,7 +82,11 @@ PRIVATE objptr IntInf_binop (GC_state s, objptr lhs, objptr rhs, size_t bytes,
 
 PRIVATE objptr IntInf_binop_2 (GC_state s,
                                 objptr lhs, objptr rhs,
-                                size_t tot_bytes, size_t l_bytes, size_t r_bytes,
+                                size_t tot_bytes,
+                                void(*result_limbs)(int left_arg_limbs,
+                                                    int right_arg_limbs,
+                                                    int *left_result_limbs,
+                                                    int *right_result_limbs),
                                 void(*binop)(__mpz_struct *l_res_mpz,
                                              __mpz_struct *r_res_mpz,
                                              const __mpz_struct *lhsspace,
@@ -102,5 +105,13 @@ PRIVATE objptr IntInf_strop (GC_state s, objptr arg, Int32_t base, size_t bytes,
                              char*(*strop)(char *str,
                                            int base,
                                            const __mpz_struct *argspace));
+
+/*
+ * Functions that compute numbers of resulting limbs from passed in results
+ * These are passed to operations that return multiple results and therefore
+ * must be made visible to runtime/basis/IntInf/int-inf.c
+ */
+PRIVATE void nonCeilDRLimbs(int n_limbs, int d_limbs, int *r1_limbs, int *r2_limbs);
+PRIVATE void ceilDRLimbs(int n_limbs, int d_limbs, int *r1_limbs, int *r2_limbs);
 
 #endif /* (defined (MLTON_GC_INTERNAL_BASIS)) */

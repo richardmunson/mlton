@@ -1279,7 +1279,7 @@ fun 'a checkApp (prim: 'a t,
       fun intInfBinary () =
          noTargs (fn () => (threeArgs (intInf, intInf, csize), intInf))
       fun intInfBinary_MulRes () = (* binary with multiple results *)
-         noTargs (fn () => (fiveArgs (intInf, intInf, csize, csize, csize), vector intInf))
+         noTargs (fn () => (threeArgs (intInf, intInf, csize), vector intInf))
       fun intInfShift () =
          noTargs (fn () => (threeArgs (intInf, shiftArg, csize), intInf))
       fun intInfUnary () =

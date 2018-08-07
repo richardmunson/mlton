@@ -1157,19 +1157,9 @@ structure IntInf =
                                           * Add in an alignment for each result
                                           *)
                                          reserveIntinfVector 2 + q_reserve_nA + r_reserve_nA
-                                            + 0w2 * (case MLton.Align.align of
+                                            + 0w3 * (case MLton.Align.align of
                                                         MLton.Align.Align4 => 0w3
-                                                      | MLton.Align.Align8 => 0w7),
-                                         (* Also store the individual reservation byte counts - will be
-                                          * needed on the runtime side to determine how much space the
-                                          * rem argument should be pushed forward.
-                                          * 
-                                          * Don't add in the alignments here - they can be calculated more
-                                          * precisely on the runtime side. This could prevent the call to the
-                                          * gc primitive from performing an avoidable memmove.
-                                          *)
-                                         q_reserve_nA,
-                                         r_reserve_nA)
+                                                      | MLton.Align.Align8 => 0w7))
                         val sub = Primitive.Vector.unsafeSub
                      in
                         (sub (qrs, 0), sub (qrs, 1))
