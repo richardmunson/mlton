@@ -1231,19 +1231,19 @@ structure IntInf =
          in
             (* Division primitives
              * Ceiling division might round up and require another limb *)
-            (*val bigCeilDiv = bigDivision (smallCeilDiv, Prim.ceilDiv, 2)*)
-            (*val bigDiv = bigDivision (smallDiv, Prim.div, 1)*)
+            val bigCeilDiv = bigDivision (smallCeilDiv, Prim.ceilDiv, 2)
+            val bigDiv = bigDivision (smallDiv, Prim.div, 1)
             val bigQuot = bigDivision (smallQuot, Prim.quot, 1)
 
             (* Remainder primitives *)
-            (*val bigCeilMod = bigRemainder (smallCeilMod, Prim.ceilMod, trivial_adj_ceilMod)*)
-            (*val bigMod = bigRemainder (smallMod, Prim.mod, trivial_adj_mod)*)
+            val bigCeilMod = bigRemainder (smallCeilMod, Prim.ceilMod, trivial_adj_ceilMod)
+            val bigMod = bigRemainder (smallMod, Prim.mod, trivial_adj_mod)
             val bigRem = bigRemainder (smallRem, Prim.rem, trivial_adj_rem)
 
             (* Division/Remainder combined primitives *)
-            (*val bigCeilDivMod =
-               bigDRComb ((smallCeilDiv, smallCeilMod), Prim.ceilDivMod, 2, trivial_adj_ceilMod)*)
-            (*val bigDivMod = bigDRComb ((smallDiv, smallMod), Prim.divMod, 1, trivial_adj_mod)*)
+            val bigCeilDivMod =
+               bigDRComb ((smallCeilDiv, smallCeilMod), Prim.ceilDivMod, 2, trivial_adj_ceilMod)
+            val bigDivMod = bigDRComb ((smallDiv, smallMod), Prim.divMod, 1, trivial_adj_mod)
             val bigQuotRem = bigDRComb ((smallQuot, smallRem), Prim.quotRem, 1, trivial_adj_rem)
          end
       end
