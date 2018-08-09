@@ -1395,12 +1395,21 @@ fun convert (program as S.Program.T {functions, globals, main, ...},
                                | IntInf_compare =>
                                     simpleCCallWithGCState
                                     (CFunction.intInfCompare IntInf_compare)
+                               | IntInf_div =>
+                                    simpleCCallWithGCState
+                                    (CFunction.intInfBinary IntInf_div)
+                               | IntInf_divMod =>
+                                    simpleCCallWithGCState
+                                    (CFunction.intInfBinary_2Res IntInf_divMod)
                                | IntInf_gcd =>
                                     simpleCCallWithGCState
                                     (CFunction.intInfBinary IntInf_gcd)
                                | IntInf_lshift =>
                                     simpleCCallWithGCState
                                     (CFunction.intInfShift IntInf_lshift)
+                               | IntInf_mod =>
+                                    simpleCCallWithGCState
+                                    (CFunction.intInfBinary IntInf_mod)
                                | IntInf_mul =>
                                     simpleCCallWithGCState
                                     (CFunction.intInfBinary IntInf_mul)

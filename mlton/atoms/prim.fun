@@ -71,8 +71,11 @@ datatype 'a t =
  | IntInf_andb (* to rssa (as runtime C fn) *)
  | IntInf_arshift (* to rssa (as runtime C fn) *)
  | IntInf_compare (* to rssa (as runtime C fn) *)
+ | IntInf_div (* to rssa (as runtime C fn) *)
+ | IntInf_divMod (* to rssa (as runtime C fn) *)
  | IntInf_gcd (* to rssa (as runtime C fn) *)
  | IntInf_lshift (* to rssa (as runtime C fn) *)
+ | IntInf_mod (* to rssa (as runtime C fn) *)
  | IntInf_mul (* to rssa (as runtime C fn) *)
  | IntInf_neg (* to rssa (as runtime C fn) *)
  | IntInf_notb (* to rssa (as runtime C fn) *)
@@ -260,8 +263,11 @@ fun toString (n: 'a t): string =
        | IntInf_andb => "IntInf_andb"
        | IntInf_arshift => "IntInf_arshift"
        | IntInf_compare => "IntInf_compare"
+       | IntInf_div => "IntInf_div"
+       | IntInf_divMod => "IntInf_divMod"
        | IntInf_gcd => "IntInf_gcd"
        | IntInf_lshift => "IntInf_lshift"
+       | IntInf_mod => "IntInf_mod"
        | IntInf_mul => "IntInf_mul"
        | IntInf_neg => "IntInf_neg"
        | IntInf_notb => "IntInf_notb"
@@ -419,8 +425,11 @@ val equals: 'a t * 'a t -> bool =
     | (IntInf_andb, IntInf_andb) => true
     | (IntInf_arshift, IntInf_arshift) => true
     | (IntInf_compare, IntInf_compare) => true
+    | (IntInf_div, IntInf_div) => true
+    | (IntInf_divMod, IntInf_divMod) => true
     | (IntInf_gcd, IntInf_gcd) => true
     | (IntInf_lshift, IntInf_lshift) => true
+    | (IntInf_mod, IntInf_mod) => true
     | (IntInf_mul, IntInf_mul) => true
     | (IntInf_neg, IntInf_neg) => true
     | (IntInf_notb, IntInf_notb) => true
@@ -597,8 +606,11 @@ val map: 'a t * ('a -> 'b) -> 'b t =
     | IntInf_andb => IntInf_andb
     | IntInf_arshift => IntInf_arshift
     | IntInf_compare => IntInf_compare
+    | IntInf_div => IntInf_div
+    | IntInf_divMod => IntInf_divMod
     | IntInf_gcd => IntInf_gcd
     | IntInf_lshift => IntInf_lshift
+    | IntInf_mod => IntInf_mod
     | IntInf_mul => IntInf_mul
     | IntInf_neg => IntInf_neg
     | IntInf_notb => IntInf_notb
@@ -855,8 +867,11 @@ val kind: 'a t -> Kind.t =
        | IntInf_andb => Functional
        | IntInf_arshift => Functional
        | IntInf_compare => Functional
+       | IntInf_div => Functional
+       | IntInf_divMod => Functional
        | IntInf_gcd => Functional
        | IntInf_lshift => Functional
+       | IntInf_mod => Functional
        | IntInf_mul => Functional
        | IntInf_neg => Functional
        | IntInf_notb => Functional
@@ -1057,8 +1072,11 @@ in
        IntInf_andb,
        IntInf_arshift,
        IntInf_compare,
+       IntInf_div,
+       IntInf_divMod,
        IntInf_gcd,
        IntInf_lshift,
+       IntInf_mod,
        IntInf_mul,
        IntInf_notb,
        IntInf_neg,
@@ -1348,8 +1366,11 @@ fun 'a checkApp (prim: 'a t,
        | IntInf_arshift => intInfShift ()
        | IntInf_compare =>
             noTargs (fn () => (twoArgs (intInf, intInf), compareRes))
+       | IntInf_div => intInfBinary ()
+       | IntInf_divMod => intInfBinary_MulRes ()
        | IntInf_gcd => intInfBinary ()
        | IntInf_lshift => intInfShift ()
+       | IntInf_mod => intInfBinary ()
        | IntInf_mul => intInfBinary ()
        | IntInf_neg => intInfUnary ()
        | IntInf_notb => intInfUnary ()
@@ -1682,7 +1703,9 @@ fun ('a, 'b) apply (p: 'a t,
             case p of
                IntInf_add => iio (IntInf.+, i1, i2)
              | IntInf_andb => iio (IntInf.andb, i1, i2)
+             | IntInf_div => iio (IntInf.div, i1, i2)
              | IntInf_gcd => iio (IntInf.gcd, i1, i2)
+             | IntInf_mod => iio (IntInf.mod, i1, i2)
              | IntInf_mul => iio (IntInf.*, i1, i2)
              | IntInf_orb => iio (IntInf.orb, i1, i2)
              | IntInf_quot => iio (IntInf.quot, i1, i2)
@@ -1863,12 +1886,21 @@ fun ('a, 'b) apply (p: 'a t,
                                        else if i = ~1
                                           then intInfConst ~1
                                        else Unknown
+                   | IntInf_div => if inOrder then
+                                       (case i of
+                                          1 => Var x
+                                        | ~1 => neg ()
+                                        | _ => Unknown)
+                                    else Unknown
                    | IntInf_gcd => if (i = ~1 orelse i = 1)
                                       then intInfConst 1
                                    else Unknown
                    | IntInf_lshift => if i = 0
                                          then intInfConst 0
                                       else Unknown
+                   | IntInf_mod => if inOrder andalso (i = ~1 orelse i = 1)
+                                      then intInfConst 0
+                                   else Unknown
                    | IntInf_mul =>
                         (case i of
                             0 => intInfConst 0

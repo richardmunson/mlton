@@ -5,7 +5,10 @@
 
 PRIVATE objptr IntInf_add (GC_state s, objptr lhs, objptr rhs, size_t bytes);
 PRIVATE objptr IntInf_andb (GC_state s, objptr lhs, objptr rhs, size_t bytes);
+PRIVATE objptr IntInf_div (GC_state s, objptr lhs, objptr rhs, size_t bytes);
+PRIVATE objptr IntInf_divMod (GC_state s, objptr lhs, objptr rhs, size_t tot_bytes);
 PRIVATE objptr IntInf_gcd (GC_state s, objptr lhs, objptr rhs, size_t bytes);
+PRIVATE objptr IntInf_mod (GC_state s, objptr lhs, objptr rhs, size_t bytes);
 PRIVATE objptr IntInf_mul (GC_state s, objptr lhs, objptr rhs, size_t bytes);
 PRIVATE objptr IntInf_orb (GC_state s, objptr lhs, objptr rhs, size_t bytes);
 PRIVATE objptr IntInf_quot (GC_state s, objptr lhs, objptr rhs, size_t bytes);
@@ -35,11 +38,32 @@ objptr IntInf_andb (GC_state s, objptr lhs, objptr rhs, size_t bytes) {
   return IntInf_binop (s, lhs, rhs, bytes, &mpz_and);
 }
 
+objptr IntInf_div (GC_state s, objptr lhs, objptr rhs, size_t bytes) {
+  if (DEBUG_INT_INF)
+    fprintf (stderr, "IntInf_div ("FMTOBJPTR", "FMTOBJPTR", %"PRIuMAX")\n",
+             lhs, rhs, (uintmax_t)bytes);
+  return IntInf_binop (s, lhs, rhs, bytes, &mpz_fdiv_q);
+}
+
+objptr IntInf_divMod (GC_state s, objptr lhs, objptr rhs, size_t tot_bytes) {
+  if (DEBUG_INT_INF)
+    fprintf (stderr, "IntInf_divMod ("FMTOBJPTR", "FMTOBJPTR", %"PRIuMAX")\n",
+             lhs, rhs, (uintmax_t)tot_bytes);
+  return IntInf_binop_2 (s, lhs, rhs, tot_bytes, &nonCeilDRLimbs, &mpz_fdiv_qr);
+}
+
 objptr IntInf_gcd (GC_state s, objptr lhs, objptr rhs, size_t bytes) {
   if (DEBUG_INT_INF)
     fprintf (stderr, "IntInf_gcd ("FMTOBJPTR", "FMTOBJPTR", %"PRIuMAX")\n",
              lhs, rhs, (uintmax_t)bytes);
   return IntInf_binop (s, lhs, rhs, bytes, &mpz_gcd);
+}
+
+objptr IntInf_mod (GC_state s, objptr lhs, objptr rhs, size_t bytes) {
+  if (DEBUG_INT_INF)
+    fprintf (stderr, "IntInf_mod ("FMTOBJPTR", "FMTOBJPTR", %"PRIuMAX")\n",
+             lhs, rhs, (uintmax_t)bytes);
+  return IntInf_binop (s, lhs, rhs, bytes, &mpz_fdiv_r);
 }
 
 objptr IntInf_mul (GC_state s, objptr lhs, objptr rhs, size_t bytes) {
