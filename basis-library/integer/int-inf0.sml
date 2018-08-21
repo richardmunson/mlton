@@ -1361,6 +1361,8 @@ structure IntInf =
          val bigGEU = S.>=
       end
 
+      fun bigDivMod (x, y) = (bigDiv (x, y), bigMod (x, y))
+
       local
          fun make (smallOp, bigOp) 
                   (lhs: bigInt, rhs: bigInt) =
