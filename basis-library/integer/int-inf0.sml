@@ -1400,7 +1400,7 @@ structure IntInf =
                                then rem (x + one, y) + (y - one)
                                else raise Div
 
-         fun bigDivMod (x, y) = (bigDiv (x, y), bigMod (x, y))
+         (*fun bigDivMod (x, y) = (bigDiv (x, y), bigMod (x, y))*)
       end
 
       local
