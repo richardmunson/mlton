@@ -1239,6 +1239,7 @@ structure IntInf =
             (*val bigCeilMod = bigRemainder (smallCeilMod, Prim.ceilMod, trivial_adj_ceilMod)*)
             val bigMod = bigRemainder (smallMod, Prim.mod, trivial_adj_mod)
             val bigRem = bigRemainder (smallRem, Prim.rem, trivial_adj_rem)
+            val bigModTest = bigMod
 
             (* Division/Remainder combined primitives *)
             (*val bigCeilDivMod =
@@ -1519,6 +1520,8 @@ structure IntInf =
 
       val mkCvt = mkBigCvt
       val mkLog2 = mkBigLog2
+
+      val mod_test = bigModTest
 end
 
 structure IntWordConv : PRIM_INTWORD_CONV =

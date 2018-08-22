@@ -13,6 +13,8 @@ signature MLTON_INT_INF =
       val gcd: t * t -> t
       val isSmall: t -> bool
 
+      val mod_test: t * t -> t
+
       structure BigWord : WORD
       structure SmallInt : INTEGER
       datatype rep =
