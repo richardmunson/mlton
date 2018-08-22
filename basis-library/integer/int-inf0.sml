@@ -51,6 +51,8 @@ signature PRIM_INT_INF =
       val -? : int * int -> int
       val - : int * int -> int
 
+      val mod_test: int * int -> int
+
       val < : int * int -> bool
       val <= : int * int -> bool
       val > : int * int -> bool
