@@ -1362,6 +1362,48 @@ structure IntInf =
       end
 
       local
+         val op + = bigAdd
+         val op - = bigSub
+         val op > = bigGT
+         val op >= = bigGE
+         val op < = bigLT
+         val quot = bigQuot
+         val rem = bigRem
+      in
+         fun bigDiv (x, y) =
+            if x >= zero
+               then if y > zero
+                       then quot (x, y)
+                       else if y < zero
+                               then if x = zero
+                                       then zero
+                                       else quot (x - one, y) - one
+                               else raise Div
+               else if y < zero
+                       then quot (x, y)
+                       else if y > zero
+                               then quot (x + one, y) - one
+                               else raise Div
+
+         (*fun bigMod (x, y) =
+            if x >= zero
+               then if y > zero
+                       then rem (x, y)
+                       else if y < zero
+                               then if x = zero
+                                       then zero
+                                       else rem (x - one, y) + (one + y)
+                               else raise Div
+               else if y < zero
+                       then rem (x, y)
+                       else if y > zero
+                               then rem (x + one, y) + (y - one)
+                               else raise Div*)
+
+         (*fun bigDivMod (x, y) = (bigDiv (x, y), bigMod (x, y))*)
+      end
+
+      local
          fun make (smallOp, bigOp) 
                   (lhs: bigInt, rhs: bigInt) =
             if areSmall (lhs, rhs)
