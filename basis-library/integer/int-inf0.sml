@@ -1370,21 +1370,6 @@ structure IntInf =
          val quot = bigQuot
          val rem = bigRem
       in
-         (*fun bigDiv (x, y) =
-            if x >= zero
-               then if y > zero
-                       then quot (x, y)
-                       else if y < zero
-                               then if x = zero
-                                       then zero
-                                       else quot (x - one, y) - one
-                               else raise Div
-               else if y < zero
-                       then quot (x, y)
-                       else if y > zero
-                               then quot (x + one, y) - one
-                               else raise Div*)
-
          fun bigMod (x, y) =
             if x >= zero
                then if y > zero
@@ -1399,8 +1384,6 @@ structure IntInf =
                        else if y > zero
                                then rem (x + one, y) + (y - one)
                                else raise Div
-
-         (*fun bigDivMod (x, y) = (bigDiv (x, y), bigMod (x, y))*)
       end
 
       local
