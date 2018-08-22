@@ -73,9 +73,9 @@ static inline void divRemLimbs_divExtra(int n_limbs, int d_limbs, int extra,
 
 // make different versions of the above function by "currying" (not really) extra
 void infRoundDRLimbs (int n_limbs, int d_limbs, int *r1_limbs, int *r2_limbs)
-  { divRemLimbs_divExtra (n_limbs, d_limbs, 1, r1_limbs, r2_limbs); }
-void zeroRoundDRLimbs (int n_limbs, int d_limbs, int *r1_limbs, int *r2_limbs)
   { divRemLimbs_divExtra (n_limbs, d_limbs, 2, r1_limbs, r2_limbs); }
+void zeroRoundDRLimbs (int n_limbs, int d_limbs, int *r1_limbs, int *r2_limbs)
+  { divRemLimbs_divExtra (n_limbs, d_limbs, 1, r1_limbs, r2_limbs); }
 
 /*
  * Given an intInf, a pointer to an __mpz_struct and space large
