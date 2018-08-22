@@ -65,17 +65,17 @@ static inline size_t limbsToSize (GC_state s, int limbs) {
  * number of extra limbs required for the quotient (the remainder always takes
  * up only as many as the denominator)
  */
-static inline void quotRemLimbs_quotExtra(int n_limbs, int d_limbs, int extra,
+static inline void divRemLimbs_divExtra(int n_limbs, int d_limbs, int extra,
                                           int *r1_limbs, int *r2_limbs) {
   *r1_limbs = n_limbs - d_limbs + extra;
   *r2_limbs = d_limbs;
 }
 
 // make different versions of the above function by "currying" (not really) extra
-void nonCeilDRLimbs (int n_limbs, int d_limbs, int *r1_limbs, int *r2_limbs)
-  { quotRemLimbs_quotExtra (n_limbs, d_limbs, 1, r1_limbs, r2_limbs); }
-void ceilDRLimbs (int n_limbs, int d_limbs, int *r1_limbs, int *r2_limbs)
-  { quotRemLimbs_quotExtra (n_limbs, d_limbs, 2, r1_limbs, r2_limbs); }
+void infRoundDRLimbs (int n_limbs, int d_limbs, int *r1_limbs, int *r2_limbs)
+  { divRemLimbs_divExtra (n_limbs, d_limbs, 1, r1_limbs, r2_limbs); }
+void zeroRoundDRLimbs (int n_limbs, int d_limbs, int *r1_limbs, int *r2_limbs)
+  { divRemLimbs_divExtra (n_limbs, d_limbs, 2, r1_limbs, r2_limbs); }
 
 /*
  * Given an intInf, a pointer to an __mpz_struct and space large
