@@ -1006,10 +1006,22 @@ structure IntInf =
       fun sameSignBit (lhs: W.word, rhs: W.word): bool =
          I.>= (W.idToObjptrInt (W.xorb (lhs, rhs)), 0)
 
+      (* Given a fixednum bigint, test if it is (strictly) negative.
+       *)
+      fun smallIsNeg (arg: bigInt): bool =
+         dropTagCoerceInt arg < 0
+
       (* Given a bignum bigint, test if it is (strictly) negative.
        *)
       fun bigIsNeg (arg: bigInt): bool =
          V.unsafeSub (Prim.toVector arg, 0) <> 0w0
+
+      (* Calls the necessary negative checker method based on size of arg *)
+      fun condIsNeg (arg: bigInt): bool =
+         if isSmall arg then
+            smallIsNeg arg
+         else
+            bigIsNeg arg
 
       local
          (* Convenient modular conversions for arguments and results
@@ -1135,7 +1147,7 @@ structure IntInf =
                   val nlimbs = numLimbs num
                   val dlimbs = numLimbs den
                in 
-                  if S.< (nlimbs, dlimbs) then
+                  if S.< (nlimbs, dlimbs) then  (* den must be big, num could be small *)
                      (* must check and possibly adjust the result sign in the
                       * cases where it must conform to the [opposite of the] sign 
                       * of the denominator *)
@@ -1202,13 +1214,13 @@ structure IntInf =
              * the numerator, yielding a result that has the opposite
              * sign of the denominator *)
             fun trivial_adj_ceilMod (num, den) =
-               if bigIsNeg den then
-                  if not (bigIsNeg num) then
+               if bigIsNeg den then  (* den is definitely big in this case *)
+                  if not (condIsNeg num) then
                      num
                   else
                      bigSub (num, den)
                else
-                  if bigIsNeg num then
+                  if condIsNeg num then
                      num
                   else
                      bigSub (num, den)
@@ -1219,12 +1231,12 @@ structure IntInf =
              * as the denominator *)
             fun trivial_adj_mod (num, den) =
                if bigIsNeg den then
-                  if bigIsNeg num then
+                  if condIsNeg num then
                      num
                   else
                      bigAdd (num, den)
                else
-                  if not (bigIsNeg num) then
+                  if not (condIsNeg num) then
                      num
                   else
                      bigAdd (num, den)
