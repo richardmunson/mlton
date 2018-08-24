@@ -1009,7 +1009,7 @@ structure IntInf =
       (* Given a fixednum bigint, test if it is (strictly) negative.
        *)
       fun smallIsNeg (arg: bigInt): bool =
-         dropTagCoerceInt arg < 0
+         I.< (dropTagCoerceInt arg, 0)
 
       (* Given a bignum bigint, test if it is (strictly) negative.
        *)
