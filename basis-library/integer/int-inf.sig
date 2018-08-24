@@ -34,8 +34,6 @@ signature INT_INF_EXTRA =
       val zero: int
       val one: int
 
-      val mod_test: int * int -> int
-
       val +? : int * int -> int
       val *? : int * int -> int
       val -? : int * int -> int

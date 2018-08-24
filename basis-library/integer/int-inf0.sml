@@ -51,8 +51,6 @@ signature PRIM_INT_INF =
       val -? : int * int -> int
       val - : int * int -> int
 
-      val mod_test: int * int -> int
-
       val < : int * int -> bool
       val <= : int * int -> bool
       val > : int * int -> bool
@@ -1214,7 +1212,7 @@ structure IntInf =
              * the numerator, yielding a result that has the opposite
              * sign of the denominator *)
             fun trivial_adj_ceilMod (num, den) =
-               if bigIsNeg den then  (* den is definitely big in this case *)
+               if bigIsNeg den then  (* den is always big in this case *)
                   if not (condIsNeg num) then
                      num
                   else
@@ -1230,7 +1228,7 @@ structure IntInf =
              * numerator, yielding a result that has the same sign
              * as the denominator *)
             fun trivial_adj_mod (num, den) =
-               if bigIsNeg den then
+               if bigIsNeg den then  (* den is always big in this case *)
                   if condIsNeg num then
                      num
                   else
@@ -1240,6 +1238,7 @@ structure IntInf =
                      num
                   else
                      bigAdd (num, den)
+
             (* rem adjuster - nothing to do, just return num with no processing. *)
             fun trivial_adj_rem (num, den) = num
          in
@@ -1253,7 +1252,6 @@ structure IntInf =
             (*val bigCeilMod = bigRemainder (smallCeilMod, Prim.ceilMod, trivial_adj_ceilMod)*)
             val bigMod = bigRemainder (smallMod, Prim.mod, trivial_adj_mod)
             val bigRem = bigRemainder (smallRem, Prim.rem, trivial_adj_rem)
-            val bigModTest = bigMod
 
             (* Division/Remainder combined primitives *)
             (*val bigCeilDivMod =
@@ -1374,31 +1372,6 @@ structure IntInf =
          val bigLEU = S.<=
          val bigGTU = S.>
          val bigGEU = S.>=
-      end
-
-      local
-         val op + = bigAdd
-         val op - = bigSub
-         val op > = bigGT
-         val op >= = bigGE
-         val op < = bigLT
-         val quot = bigQuot
-         val rem = bigRem
-      in
-         (*fun bigMod (x, y) =
-            if x >= zero
-               then if y > zero
-                       then rem (x, y)
-                       else if y < zero
-                               then if x = zero
-                                       then zero
-                                       else rem (x - one, y) + (one + y)
-                               else raise Div
-               else if y < zero
-                       then rem (x, y)
-                       else if y > zero
-                               then rem (x + one, y) + (y - one)
-                               else raise Div*)
       end
 
       local
@@ -1534,8 +1507,6 @@ structure IntInf =
 
       val mkCvt = mkBigCvt
       val mkLog2 = mkBigLog2
-
-      val mod_test = bigModTest
 end
 
 structure IntWordConv : PRIM_INTWORD_CONV =
