@@ -1392,6 +1392,15 @@ fun convert (program as S.Program.T {functions, globals, main, ...},
                                | IntInf_arshift =>
                                     simpleCCallWithGCState
                                     (CFunction.intInfShift IntInf_arshift)
+                               | IntInf_ceilDiv =>
+                                    simpleCCallWithGCState
+                                    (CFunction.intInfBinary IntInf_ceilDiv)
+                               | IntInf_ceilDivMod =>
+                                    simpleCCallWithGCState
+                                    (CFunction.intInfBinary_2Res IntInf_ceilDivMod)
+                               | IntInf_ceilMod =>
+                                    simpleCCallWithGCState
+                                    (CFunction.intInfBinary IntInf_ceilMod)
                                | IntInf_compare =>
                                     simpleCCallWithGCState
                                     (CFunction.intInfCompare IntInf_compare)
