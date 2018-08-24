@@ -34,6 +34,9 @@ signature PRIM_INT_INF =
       val +! : int * int -> int
       val +? : int * int -> int
       val + : int * int -> int
+      val ceilDiv: int * int -> int
+      val ceilDivMod: int * int -> int * int
+      val ceilMod: int * int -> int
       val divMod: int * int -> int * int
       val div: int * int -> int
       val gcd: int * int -> int
