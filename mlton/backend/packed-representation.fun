@@ -2596,7 +2596,9 @@ fun compute (program as Ssa.Program.T {datatypes, ...}) =
                                           then delay ()
                                        else
                                           (case S.Type.dest elt of
-                                              S.Type.Word s =>
+                                              S.Type.IntInf =>
+                                                 now ObjptrTycon.intInfVector
+                                            | S.Type.Word s =>
                                                  let
                                                     val nBits = WordSize.bits s
                                                     val nInt = Bits.toInt nBits
