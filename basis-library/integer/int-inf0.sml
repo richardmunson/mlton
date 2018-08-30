@@ -1120,8 +1120,8 @@ structure IntInf =
          (* big division/remainder curried factories *)
          fun bigDivision (small: bigInt * bigInt -> bigInt,
                           big: bigInt * bigInt * Sz.t -> bigInt,
-                          trivialAdj: bigInt * bigInt -> bigInt,
-                          extra: S.int)
+                          extra: S.int,
+                          trivialAdj: bigInt * bigInt -> bigInt)
                          (num: bigInt, den: bigInt): bigInt =
             if areSmall (num, den) then
                small (num, den)
@@ -1213,10 +1213,10 @@ structure IntInf =
             fun areSameSign (num, den) =
                let
                   val isNNum = condIsNeg num
-                  val isNDenom = bigIsNeg denom
+                  val isNDen = bigIsNeg den
                in
-                  (isNNum andalso isNDenom)
-                     orelse (not isNNum andalso not isNDenom)
+                  (isNNum andalso isNDen)
+                     orelse (not isNNum andalso not isNDen)
                end
 
             (* DIVISION ADJUSTERS
